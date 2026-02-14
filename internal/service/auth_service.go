@@ -31,15 +31,15 @@ func NewAuthService(authorRepo *repository.AuthorRepository, evRepo *repository.
 	return &AuthService{authorRepo: authorRepo, evRepo: evRepo, cfg: cfg}
 }
 
-// RequestVerification sends a 6-digit code to the email. Always returns success for privacy.
-func (s *AuthService) RequestVerification(ctx context.Context, email string) error {
+// RequestVerification sends a 6-digit code to the email. Returns the code when SMTP is not configured (for dev/testing so you can use it in Swagger).
+func (s *AuthService) RequestVerification(ctx context.Context, email string) (devCode string, err error) {
 	email = normalizeEmail(email)
 	if email == "" {
-		return errors.New("email is required")
+		return "", errors.New("email is required")
 	}
 	code, err := generateCode(codeLength)
 	if err != nil {
-		return err
+		return "", err
 	}
 	_ = s.evRepo.DeleteByEmail(ctx, email)
 	ev := &model.EmailVerification{
@@ -48,14 +48,14 @@ func (s *AuthService) RequestVerification(ctx context.Context, email string) err
 		ExpiresAt: time.Now().Add(codeExpiryMinutes * time.Minute),
 	}
 	if err := s.evRepo.Create(ctx, ev); err != nil {
-		return err
+		return "", err
 	}
 	if s.cfg.SMTPHost == "" {
 		log.Printf("[auth] SMTP not configured; verification code for %s: %s", email, code)
-	} else {
-		_ = mail.SendVerificationCode(email, code, s.cfg.SMTPHost, s.cfg.SMTPPort, s.cfg.SMTPUser, s.cfg.SMTPPass, s.cfg.SMTPFrom)
+		return code, nil
 	}
-	return nil
+	_ = mail.SendVerificationCode(email, code, s.cfg.SMTPHost, s.cfg.SMTPPort, s.cfg.SMTPUser, s.cfg.SMTPPass, s.cfg.SMTPFrom)
+	return "", nil
 }
 
 // VerifyAndRegister checks the code, creates the author with name/password, and returns author + JWT.

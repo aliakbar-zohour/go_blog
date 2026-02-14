@@ -30,6 +30,7 @@ func (r *EmailVerificationRepository) FindValid(ctx context.Context, email, code
 	return &ev, nil
 }
 
+// DeleteByEmail permanently removes verification records for this email so a new code can be requested.
 func (r *EmailVerificationRepository) DeleteByEmail(ctx context.Context, email string) error {
-	return r.db.WithContext(ctx).Where("email = ?", email).Delete(&model.EmailVerification{}).Error
+	return r.db.WithContext(ctx).Unscoped().Where("email = ?", email).Delete(&model.EmailVerification{}).Error
 }

@@ -169,9 +169,11 @@ Server: **http://localhost:8080**. Create an `uploads` directory if you use file
 Use the `token` in the **Authorization** header: `Authorization: Bearer <token>` for protected routes.
 
 **Registration flow:**  
-1. `POST /api/auth/register/request` with `{"email":"writer@example.com"}` → a 6-digit code is generated and sent by email (if SMTP is set).  
-2. `POST /api/auth/register/verify` with `{"email":"...", "code":"123456", "name":"Jane", "password":"secret123"}` → account is created and a JWT is returned.  
+1. `POST /api/auth/register/request` with `{"email":"writer@example.com"}` → a 6-digit code is generated. If **SMTP is not configured**, the response includes `dev_code` (use it in step 2). If SMTP is set, the code is sent by email.  
+2. `POST /api/auth/register/verify` with `{"email":"...", "code":"<dev_code or from email>", "name":"Jane", "password":"secret123"}` → account is created and a JWT is returned.  
 3. Use the JWT in `Authorization: Bearer <token>` when creating or editing posts.
+
+**Sending real emails:** Set `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, and `SMTP_FROM` in your env (or `.env`). For Gmail use an [App Password](https://support.google.com/accounts/answer/185833) and `SMTP_HOST=smtp.gmail.com`, `SMTP_PORT=587`. For testing, you can use [Mailtrap](https://mailtrap.io) or similar.
 
 ### Posts (create/update/delete require JWT; author = logged-in writer)
 

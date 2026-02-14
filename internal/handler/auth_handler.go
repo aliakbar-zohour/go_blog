@@ -57,11 +57,17 @@ func (h *AuthHandler) RequestVerification(w http.ResponseWriter, r *http.Request
 		response.BadRequest(w, "invalid body")
 		return
 	}
-	if err := h.svc.RequestVerification(r.Context(), body.Email); err != nil {
+	devCode, err := h.svc.RequestVerification(r.Context(), body.Email)
+	if err != nil {
 		response.BadRequest(w, err.Error())
 		return
 	}
-	response.OK(w, map[string]bool{"sent": true})
+	res := map[string]interface{}{"sent": true}
+	if devCode != "" {
+		res["dev_code"] = devCode
+		res["message"] = "SMTP not configured; use dev_code in /auth/register/verify to complete registration."
+	}
+	response.OK(w, res)
 }
 
 // VerifyAndRegister godoc
