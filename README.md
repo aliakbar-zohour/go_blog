@@ -22,8 +22,9 @@ REST API for a blog built with **Go**, **PostgreSQL**, and **Swagger UI**. Suppo
 
 ## Features
 
-- **Posts** – CRUD, banner image, optional author and category, extra media (images/videos)
-- **Authors** – CRUD with name and avatar image
+- **Auth** – Register with email (verification code), verify & complete profile, login with email/password; JWT for protected routes
+- **Posts** – CRUD with banner, category, media; **create/update/delete require JWT** (author = logged-in writer)
+- **Authors** – List/create/update/delete (name, avatar); registered writers have email and can log in
 - **Categories** – CRUD; filter posts by category
 - **Comments** – List/create per post; update/delete by comment ID
 - **Swagger UI** – Interactive API docs at `/docs/` (generated from code in Docker)
@@ -51,9 +52,11 @@ REST API for a blog built with **Go**, **PostgreSQL**, and **Swagger UI**. Suppo
 | `internal/service` | Business logic and validation |
 | `internal/handler` | HTTP handlers and Swagger annotations |
 | `internal/router` | Routes and middleware |
-| `internal/middleware` | Panic recovery, security headers, logging |
+| `internal/middleware` | Panic recovery, security headers, logging, JWT auth |
+| `internal/mail` | Sends verification code email (HTML template) |
 | `internal/upload` | File validation and storage (banners, avatars, media) |
 | `pkg/response` | Shared JSON response format |
+| `pkg/auth` | Password hashing (bcrypt), JWT create/parse |
 | `docs/` | Generated Swagger (by `swag init` or inside Docker) |
 
 ---
@@ -143,20 +146,42 @@ Server: **http://localhost:8080**. Create an `uploads` directory if you use file
 | `DB_SSLMODE` | `disable` | PostgreSQL SSL mode |
 | `UPLOAD_DIR` | `uploads` | Directory for uploaded files |
 | `MAX_UPLOAD_MB` | `50` | Max file size per upload (MB) |
+| `JWT_SECRET` | `change-me-in-production` | Secret for signing JWTs (set in production) |
+| `JWT_EXPIRY_HOURS` | `72` | JWT expiry in hours |
+| `SMTP_HOST` | (empty) | SMTP server for verification emails; if empty, codes are not sent |
+| `SMTP_PORT` | `587` | SMTP port |
+| `SMTP_USER` | (empty) | SMTP username |
+| `SMTP_PASS` | (empty) | SMTP password |
+| `SMTP_FROM` | `noreply@go-blog.local` | From address for emails |
 
 ---
 
 ## API endpoints
 
-### Posts
+### Auth (no JWT required)
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `POST` | `/api/auth/register/request` | Request verification code (body: `{"email":"..."}`); sends code to email if SMTP configured |
+| `POST` | `/api/auth/register/verify` | Verify code and complete registration (body: `email`, `code`, `name`, `password`); returns `author` + `token` |
+| `POST` | `/api/auth/login` | Login (body: `email`, `password`); returns `author` + `token` |
+
+Use the `token` in the **Authorization** header: `Authorization: Bearer <token>` for protected routes.
+
+**Registration flow:**  
+1. `POST /api/auth/register/request` with `{"email":"writer@example.com"}` → a 6-digit code is generated and sent by email (if SMTP is set).  
+2. `POST /api/auth/register/verify` with `{"email":"...", "code":"123456", "name":"Jane", "password":"secret123"}` → account is created and a JWT is returned.  
+3. Use the JWT in `Authorization: Bearer <token>` when creating or editing posts.
+
+### Posts (create/update/delete require JWT; author = logged-in writer)
 
 | Method | Path | Description |
 |--------|------|-------------|
 | `GET` | `/api/posts` | List posts (`limit`, `offset`, `category_id` to filter) |
-| `POST` | `/api/posts` | Create (form: `title`, `body`, `author_id`, `category_id`, `banner`, `files[]`) |
+| `POST` | `/api/posts` | **Auth.** Create (form: `title`, `body`, `category_id`, `banner`, `files[]`); author set from JWT |
 | `GET` | `/api/posts/:id` | Get one (includes author and category) |
-| `PUT` | `/api/posts/:id` | Update (form: same as create; all optional) |
-| `DELETE` | `/api/posts/:id` | Soft delete |
+| `PUT` | `/api/posts/:id` | **Auth.** Update own post (form: `title`, `body`, `category_id`, `banner`, `files[]`) |
+| `DELETE` | `/api/posts/:id` | **Auth.** Delete own post |
 
 ### Authors
 

@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/aliakbar-zohour/go_blog/internal/middleware"
+	"github.com/aliakbar-zohour/go_blog/internal/model"
 	"github.com/aliakbar-zohour/go_blog/internal/service"
 	"github.com/aliakbar-zohour/go_blog/pkg/response"
 	"github.com/go-chi/chi/v5"
@@ -23,18 +25,19 @@ func NewPostHandler(svc *service.PostService) *PostHandler {
 // Create godoc
 //
 //	@Summary		Create a post
-//	@Description	Creates a new post with title, body, optional banner, author, category, and media files.
+//	@Description	Creates a new post (author = logged-in user from JWT). Requires Authorization: Bearer <token>.
 //	@Tags			posts
 //	@Accept			multipart/form-data
 //	@Produce		json
+//	@Security		Bearer
 //	@Param			title		formData	string	true	"Post title"
 //	@Param			body		formData	string	false	"Post body"
-//	@Param			author_id	formData	int		false	"Author ID"
 //	@Param			category_id	formData	int		false	"Category ID"
 //	@Param			banner		formData	file	false	"Banner image"
 //	@Param			files		formData	file	false	"Image or video files"
 //	@Success		201			{object}	response.Body{data=model.Post}
 //	@Failure		400			{object}	response.Body
+//	@Failure		401			{object}	response.Body
 //	@Router			/posts [post]
 func (h *PostHandler) Create(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseMultipartForm(32 << 20); err != nil {
@@ -43,14 +46,18 @@ func (h *PostHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 	title := r.FormValue("title")
 	body := r.FormValue("body")
-	authorID := parseOptionalUint(r.FormValue("author_id"))
 	categoryID := parseOptionalUint(r.FormValue("category_id"))
+	authorID := middleware.GetAuthorID(r.Context())
+	if authorID == 0 {
+		response.BadRequest(w, "authorization required to create a post")
+		return
+	}
 	var banner *multipart.FileHeader
 	if r.MultipartForm != nil && len(r.MultipartForm.File["banner"]) > 0 {
 		banner = r.MultipartForm.File["banner"][0]
 	}
 	files := r.MultipartForm.File["files"]
-	post, err := h.svc.Create(r.Context(), title, body, authorID, categoryID, banner, files)
+	post, err := h.svc.Create(r.Context(), title, body, &authorID, categoryID, banner, files)
 	if err != nil {
 		response.BadRequest(w, err.Error())
 		return
@@ -114,19 +121,20 @@ func (h *PostHandler) List(w http.ResponseWriter, r *http.Request) {
 // Update godoc
 //
 //	@Summary		Update a post
-//	@Description	Updates a post. Empty fields are left unchanged. New banner and files are optional.
+//	@Description	Updates own post. Requires Authorization: Bearer <token>. Empty fields are left unchanged.
 //	@Tags			posts
 //	@Accept			multipart/form-data
 //	@Produce		json
+//	@Security		Bearer
 //	@Param			id			path		int		true	"Post ID"
 //	@Param			title		formData	string	false	"New title"
 //	@Param			body		formData	string	false	"New body"
-//	@Param			author_id	formData	int		false	"Author ID"
 //	@Param			category_id	formData	int		false	"Category ID"
 //	@Param			banner		formData	file	false	"New banner image"
 //	@Param			files		formData	file	false	"New media files"
 //	@Success		200			{object}	response.Body{data=model.Post}
 //	@Failure		400			{object}	response.Body
+//	@Failure		401			{object}	response.Body
 //	@Failure		404			{object}	response.Body
 //	@Failure		500			{object}	response.Body
 //	@Router			/posts/{id} [put]
@@ -136,8 +144,13 @@ func (h *PostHandler) Update(w http.ResponseWriter, r *http.Request) {
 		response.BadRequest(w, "invalid id")
 		return
 	}
+	loggedAuthorID := middleware.GetAuthorID(r.Context())
+	if loggedAuthorID == 0 {
+		response.BadRequest(w, "authorization required to update a post")
+		return
+	}
 	var title, body string
-	var authorID, categoryID *uint
+	var categoryID *uint
 	var banner *multipart.FileHeader
 	var files []*multipart.FileHeader
 	if strings.Contains(r.Header.Get("Content-Type"), "multipart/form-data") {
@@ -147,7 +160,6 @@ func (h *PostHandler) Update(w http.ResponseWriter, r *http.Request) {
 		}
 		title = r.FormValue("title")
 		body = r.FormValue("body")
-		authorID = parseOptionalUint(r.FormValue("author_id"))
 		categoryID = parseOptionalUint(r.FormValue("category_id"))
 		if r.MultipartForm != nil {
 			if len(r.MultipartForm.File["banner"]) > 0 {
@@ -159,10 +171,18 @@ func (h *PostHandler) Update(w http.ResponseWriter, r *http.Request) {
 		_ = r.ParseForm()
 		title = r.FormValue("title")
 		body = r.FormValue("body")
-		authorID = parseOptionalUint(r.FormValue("author_id"))
 		categoryID = parseOptionalUint(r.FormValue("category_id"))
 	}
-	post, err := h.svc.Update(r.Context(), uint(id), title, body, authorID, categoryID, banner, files)
+	existing, err := h.svc.GetByID(r.Context(), uint(id))
+	if err != nil || existing == nil {
+		response.NotFound(w, "post not found")
+		return
+	}
+	if !canEditPost(existing, loggedAuthorID) {
+		response.BadRequest(w, "you can only edit your own posts")
+		return
+	}
+	post, err := h.svc.Update(r.Context(), uint(id), title, body, nil, categoryID, banner, files)
 	if err != nil {
 		response.Internal(w, err.Error())
 		return
@@ -177,11 +197,13 @@ func (h *PostHandler) Update(w http.ResponseWriter, r *http.Request) {
 // Delete godoc
 //
 //	@Summary		Delete a post
-//	@Description	Deletes the post with the given ID (soft delete).
+//	@Description	Deletes own post. Requires Authorization: Bearer <token>.
 //	@Tags			posts
+//	@Security		Bearer
 //	@Param			id	path	int	true	"Post ID"
 //	@Success		204	"No content"
 //	@Failure		400	{object}	response.Body
+//	@Failure		401	{object}	response.Body
 //	@Failure		500	{object}	response.Body
 //	@Router			/posts/{id} [delete]
 func (h *PostHandler) Delete(w http.ResponseWriter, r *http.Request) {
@@ -190,11 +212,32 @@ func (h *PostHandler) Delete(w http.ResponseWriter, r *http.Request) {
 		response.BadRequest(w, "invalid id")
 		return
 	}
+	loggedAuthorID := middleware.GetAuthorID(r.Context())
+	if loggedAuthorID == 0 {
+		response.BadRequest(w, "authorization required to delete a post")
+		return
+	}
+	existing, err := h.svc.GetByID(r.Context(), uint(id))
+	if err != nil || existing == nil {
+		response.NotFound(w, "post not found")
+		return
+	}
+	if !canEditPost(existing, loggedAuthorID) {
+		response.BadRequest(w, "you can only delete your own posts")
+		return
+	}
 	if err := h.svc.Delete(r.Context(), uint(id)); err != nil {
 		response.Internal(w, "failed to delete post")
 		return
 	}
 	response.NoContent(w)
+}
+
+func canEditPost(post *model.Post, authorID uint) bool {
+	if post.AuthorID == nil {
+		return true
+	}
+	return *post.AuthorID == authorID
 }
 
 func parseOptionalUint(s string) *uint {

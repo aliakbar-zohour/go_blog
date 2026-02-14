@@ -13,6 +13,8 @@ services:
       DB_SSLMODE: disable
       UPLOAD_DIR: /app/uploads
       MAX_UPLOAD_MB: "50"
+      JWT_SECRET: "${JWT_SECRET:-change-me-in-production}"
+      JWT_EXPIRY_HOURS: "72"
     volumes:
       - uploads_data:/app/uploads
     depends_on:

@@ -15,6 +15,138 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/auth/login": {
+            "post": {
+                "description": "Returns author and JWT for valid email/password. Use the token in Authorization: Bearer \u003ctoken\u003e for protected routes.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Login",
+                "parameters": [
+                    {
+                        "description": "Email and password",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handler.AuthLoginRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "data contains author and token",
+                        "schema": {
+                            "$ref": "#/definitions/response.Body"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.Body"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/register/request": {
+            "post": {
+                "description": "Sends a 6-digit code to the given email (if SMTP configured). For testing without SMTP, the code is logged on the server.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Request verification code",
+                "parameters": [
+                    {
+                        "description": "Email to send the code to",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handler.AuthRegisterRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Body"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.Body"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/register/verify": {
+            "post": {
+                "description": "Verifies the code sent to email, creates the author account with name and password, returns author and JWT. Password must be at least 8 characters.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Verify code and complete registration",
+                "parameters": [
+                    {
+                        "description": "Email, code, name and password",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handler.AuthRegisterVerifyRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "data contains author and token",
+                        "schema": {
+                            "$ref": "#/definitions/response.Body"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.Body"
+                        }
+                    }
+                }
+            }
+        },
         "/authors": {
             "get": {
                 "description": "Returns all authors.",
@@ -671,7 +803,12 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "description": "Creates a new post with title, body, optional banner, author, category, and media files.",
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Creates a new post (author = logged-in user from JWT). Requires Authorization: Bearer \u003ctoken\u003e.",
                 "consumes": [
                     "multipart/form-data"
                 ],
@@ -694,12 +831,6 @@ const docTemplate = `{
                         "type": "string",
                         "description": "Post body",
                         "name": "body",
-                        "in": "formData"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Author ID",
-                        "name": "author_id",
                         "in": "formData"
                     },
                     {
@@ -742,6 +873,12 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.Body"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
                         "schema": {
                             "$ref": "#/definitions/response.Body"
                         }
@@ -802,7 +939,12 @@ const docTemplate = `{
                 }
             },
             "put": {
-                "description": "Updates a post. Empty fields are left unchanged. New banner and files are optional.",
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Updates own post. Requires Authorization: Bearer \u003ctoken\u003e. Empty fields are left unchanged.",
                 "consumes": [
                     "multipart/form-data"
                 ],
@@ -831,12 +973,6 @@ const docTemplate = `{
                         "type": "string",
                         "description": "New body",
                         "name": "body",
-                        "in": "formData"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Author ID",
-                        "name": "author_id",
                         "in": "formData"
                     },
                     {
@@ -883,6 +1019,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/response.Body"
                         }
                     },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/response.Body"
+                        }
+                    },
                     "404": {
                         "description": "Not Found",
                         "schema": {
@@ -898,7 +1040,12 @@ const docTemplate = `{
                 }
             },
             "delete": {
-                "description": "Deletes the post with the given ID (soft delete).",
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Deletes own post. Requires Authorization: Bearer \u003ctoken\u003e.",
                 "tags": [
                     "posts"
                 ],
@@ -918,6 +1065,12 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.Body"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
                         "schema": {
                             "$ref": "#/definitions/response.Body"
                         }
@@ -1056,6 +1209,49 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "handler.AuthLoginRequest": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string",
+                    "example": "writer@example.com"
+                },
+                "password": {
+                    "type": "string",
+                    "example": "secret123"
+                }
+            }
+        },
+        "handler.AuthRegisterRequest": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string",
+                    "example": "writer@example.com"
+                }
+            }
+        },
+        "handler.AuthRegisterVerifyRequest": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string",
+                    "example": "123456"
+                },
+                "email": {
+                    "type": "string",
+                    "example": "writer@example.com"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Jane Doe"
+                },
+                "password": {
+                    "type": "string",
+                    "example": "secret123"
+                }
+            }
+        },
         "model.Author": {
             "type": "object",
             "properties": {
@@ -1063,6 +1259,12 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "created_at": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "email_verified_at": {
                     "type": "string"
                 },
                 "id": {
@@ -1203,6 +1405,13 @@ const docTemplate = `{
                 }
             }
         }
+    },
+    "securityDefinitions": {
+        "Bearer": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
+        }
     }
 }`
 
@@ -1213,7 +1422,7 @@ var SwaggerInfo = &swag.Spec{
 	BasePath:         "/api",
 	Schemes:          []string{"http"},
 	Title:            "Go Blog API",
-	Description:      "REST API for a blog with CRUD posts and image/video upload. Errors are returned in the response body with an \"error\" field.",
+	Description:      "REST API for a blog with auth (register with email code, login), CRUD posts (create/update/delete require JWT), authors, categories, comments. Errors are returned in the response body with an \"error\" field.",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

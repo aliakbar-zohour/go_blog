@@ -29,6 +29,15 @@ func (r *AuthorRepository) GetByID(ctx context.Context, id uint) (*model.Author,
 	return &a, nil
 }
 
+func (r *AuthorRepository) GetByEmail(ctx context.Context, email string) (*model.Author, error) {
+	var a model.Author
+	err := r.db.WithContext(ctx).Where("email = ?", email).First(&a).Error
+	if err != nil {
+		return nil, err
+	}
+	return &a, nil
+}
+
 func (r *AuthorRepository) List(ctx context.Context) ([]model.Author, error) {
 	var list []model.Author
 	err := r.db.WithContext(ctx).Order("name").Find(&list).Error

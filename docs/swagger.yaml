@@ -1,10 +1,44 @@
 basePath: /api
 definitions:
+  handler.AuthLoginRequest:
+    properties:
+      email:
+        example: writer@example.com
+        type: string
+      password:
+        example: secret123
+        type: string
+    type: object
+  handler.AuthRegisterRequest:
+    properties:
+      email:
+        example: writer@example.com
+        type: string
+    type: object
+  handler.AuthRegisterVerifyRequest:
+    properties:
+      code:
+        example: "123456"
+        type: string
+      email:
+        example: writer@example.com
+        type: string
+      name:
+        example: Jane Doe
+        type: string
+      password:
+        example: secret123
+        type: string
+    type: object
   model.Author:
     properties:
       avatar_path:
         type: string
       created_at:
+        type: string
+      email:
+        type: string
+      email_verified_at:
         type: string
       id:
         type: integer
@@ -100,11 +134,98 @@ definitions:
 host: localhost:8080
 info:
   contact: {}
-  description: REST API for a blog with CRUD posts and image/video upload. Errors
+  description: REST API for a blog with auth (register with email code, login), CRUD
+    posts (create/update/delete require JWT), authors, categories, comments. Errors
     are returned in the response body with an "error" field.
   title: Go Blog API
   version: "1.0"
 paths:
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: 'Returns author and JWT for valid email/password. Use the token
+        in Authorization: Bearer <token> for protected routes.'
+      parameters:
+      - description: Email and password
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handler.AuthLoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: data contains author and token
+          schema:
+            $ref: '#/definitions/response.Body'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Body'
+      summary: Login
+      tags:
+      - auth
+  /auth/register/request:
+    post:
+      consumes:
+      - application/json
+      description: Sends a 6-digit code to the given email (if SMTP configured). For
+        testing without SMTP, the code is logged on the server.
+      parameters:
+      - description: Email to send the code to
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handler.AuthRegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Body'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Body'
+      summary: Request verification code
+      tags:
+      - auth
+  /auth/register/verify:
+    post:
+      consumes:
+      - application/json
+      description: Verifies the code sent to email, creates the author account with
+        name and password, returns author and JWT. Password must be at least 8 characters.
+      parameters:
+      - description: Email, code, name and password
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handler.AuthRegisterVerifyRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: data contains author and token
+          schema:
+            $ref: '#/definitions/response.Body'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Body'
+      summary: Verify code and complete registration
+      tags:
+      - auth
   /authors:
     get:
       description: Returns all authors.
@@ -513,8 +634,8 @@ paths:
     post:
       consumes:
       - multipart/form-data
-      description: Creates a new post with title, body, optional banner, author, category,
-        and media files.
+      description: 'Creates a new post (author = logged-in user from JWT). Requires
+        Authorization: Bearer <token>.'
       parameters:
       - description: Post title
         in: formData
@@ -525,10 +646,6 @@ paths:
         in: formData
         name: body
         type: string
-      - description: Author ID
-        in: formData
-        name: author_id
-        type: integer
       - description: Category ID
         in: formData
         name: category_id
@@ -557,12 +674,18 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/response.Body'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.Body'
+      security:
+      - Bearer: []
       summary: Create a post
       tags:
       - posts
   /posts/{id}:
     delete:
-      description: Deletes the post with the given ID (soft delete).
+      description: 'Deletes own post. Requires Authorization: Bearer <token>.'
       parameters:
       - description: Post ID
         in: path
@@ -576,10 +699,16 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/response.Body'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.Body'
         "500":
           description: Internal Server Error
           schema:
             $ref: '#/definitions/response.Body'
+      security:
+      - Bearer: []
       summary: Delete a post
       tags:
       - posts
@@ -617,8 +746,8 @@ paths:
     put:
       consumes:
       - multipart/form-data
-      description: Updates a post. Empty fields are left unchanged. New banner and
-        files are optional.
+      description: 'Updates own post. Requires Authorization: Bearer <token>. Empty
+        fields are left unchanged.'
       parameters:
       - description: Post ID
         in: path
@@ -633,10 +762,6 @@ paths:
         in: formData
         name: body
         type: string
-      - description: Author ID
-        in: formData
-        name: author_id
-        type: integer
       - description: Category ID
         in: formData
         name: category_id
@@ -665,6 +790,10 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/response.Body'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.Body'
         "404":
           description: Not Found
           schema:
@@ -673,6 +802,8 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/response.Body'
+      security:
+      - Bearer: []
       summary: Update a post
       tags:
       - posts
@@ -754,4 +885,9 @@ paths:
       - comments
 schemes:
 - http
+securityDefinitions:
+  Bearer:
+    in: header
+    name: Authorization
+    type: apiKey
 swagger: "2.0"
