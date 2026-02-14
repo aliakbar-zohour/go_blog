@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/aliakbar-zohour/go_blog/internal/middleware"
 	"github.com/aliakbar-zohour/go_blog/internal/service"
 	"github.com/aliakbar-zohour/go_blog/pkg/response"
 	"github.com/go-chi/chi/v5"
@@ -100,15 +101,18 @@ func (h *AuthorHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 // Update godoc
 //
 //	@Summary		Update an author
-//	@Description	Updates author name and/or avatar.
+//	@Description	Updates own profile (name and/or avatar). Requires Authorization: Bearer <token>. You can only update yourself.
 //	@Tags			authors
 //	@Accept			multipart/form-data
 //	@Produce		json
+//	@Security		Bearer
 //	@Param			id		path		int		true	"Author ID"
 //	@Param			name	formData	string	false	"Author name"
 //	@Param			avatar	formData	file	false	"Avatar image"
 //	@Success		200		{object}	response.Body{data=model.Author}
 //	@Failure		400		{object}	response.Body
+//	@Failure		401		{object}	response.Body
+//	@Failure		403		{object}	response.Body
 //	@Failure		404		{object}	response.Body
 //	@Failure		500		{object}	response.Body
 //	@Router			/authors/{id} [put]
@@ -116,6 +120,11 @@ func (h *AuthorHandler) Update(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseUint(chi.URLParam(r, "id"), 10, 32)
 	if err != nil {
 		response.BadRequest(w, "invalid id")
+		return
+	}
+	loggedID := middleware.GetAuthorID(r.Context())
+	if loggedID == 0 || loggedID != uint(id) {
+		response.Forbidden(w, "you can only update your own profile")
 		return
 	}
 	var name string
@@ -148,17 +157,25 @@ func (h *AuthorHandler) Update(w http.ResponseWriter, r *http.Request) {
 // Delete godoc
 //
 //	@Summary		Delete an author
-//	@Description	Deletes the author with the given ID.
+//	@Description	Deletes own account. Requires Authorization: Bearer <token>. You can only delete yourself.
 //	@Tags			authors
+//	@Security		Bearer
 //	@Param			id	path	int	true	"Author ID"
 //	@Success		204	"No content"
 //	@Failure		400	{object}	response.Body
+//	@Failure		401	{object}	response.Body
+//	@Failure		403	{object}	response.Body
 //	@Failure		500	{object}	response.Body
 //	@Router			/authors/{id} [delete]
 func (h *AuthorHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseUint(chi.URLParam(r, "id"), 10, 32)
 	if err != nil {
 		response.BadRequest(w, "invalid id")
+		return
+	}
+	loggedID := middleware.GetAuthorID(r.Context())
+	if loggedID == 0 || loggedID != uint(id) {
+		response.Forbidden(w, "you can only delete your own account")
 		return
 	}
 	if err := h.svc.Delete(r.Context(), uint(id)); err != nil {

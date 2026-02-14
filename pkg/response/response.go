@@ -45,3 +45,11 @@ func NotFound(w http.ResponseWriter, errMsg string) {
 func Internal(w http.ResponseWriter, errMsg string) {
 	Err(w, http.StatusInternalServerError, errMsg)
 }
+
+func Unauthorized(w http.ResponseWriter, errMsg string) {
+	Err(w, http.StatusUnauthorized, errMsg)
+}
+
+func Forbidden(w http.ResponseWriter, errMsg string) {
+	Err(w, http.StatusForbidden, errMsg)
+}

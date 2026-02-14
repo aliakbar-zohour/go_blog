@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/aliakbar-zohour/go_blog/pkg/auth"
+	"github.com/aliakbar-zohour/go_blog/pkg/response"
 )
 
 type contextKey string
@@ -19,23 +20,17 @@ func RequireAuth(secret string) func(http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			header := r.Header.Get("Authorization")
 			if header == "" {
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(http.StatusUnauthorized)
-				_, _ = w.Write([]byte(`{"success":false,"error":"authorization required"}`))
+				response.Unauthorized(w, "authorization required")
 				return
 			}
 			parts := strings.SplitN(header, " ", 2)
 			if len(parts) != 2 || parts[0] != "Bearer" {
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(http.StatusUnauthorized)
-				_, _ = w.Write([]byte(`{"success":false,"error":"invalid authorization header"}`))
+				response.Unauthorized(w, "invalid authorization header")
 				return
 			}
 			claims, err := auth.ParseToken(parts[1], secret)
 			if err != nil {
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(http.StatusUnauthorized)
-				_, _ = w.Write([]byte(`{"success":false,"error":"invalid or expired token"}`))
+				response.Unauthorized(w, "invalid or expired token")
 				return
 			}
 			ctx := context.WithValue(r.Context(), AuthorIDKey, claims.AuthorID)

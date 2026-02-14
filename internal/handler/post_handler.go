@@ -49,7 +49,7 @@ func (h *PostHandler) Create(w http.ResponseWriter, r *http.Request) {
 	categoryID := parseOptionalUint(r.FormValue("category_id"))
 	authorID := middleware.GetAuthorID(r.Context())
 	if authorID == 0 {
-		response.BadRequest(w, "authorization required to create a post")
+			response.Unauthorized(w, "authorization required to create a post")
 		return
 	}
 	var banner *multipart.FileHeader
@@ -135,6 +135,7 @@ func (h *PostHandler) List(w http.ResponseWriter, r *http.Request) {
 //	@Success		200			{object}	response.Body{data=model.Post}
 //	@Failure		400			{object}	response.Body
 //	@Failure		401			{object}	response.Body
+//	@Failure		403			{object}	response.Body
 //	@Failure		404			{object}	response.Body
 //	@Failure		500			{object}	response.Body
 //	@Router			/posts/{id} [put]
@@ -146,7 +147,7 @@ func (h *PostHandler) Update(w http.ResponseWriter, r *http.Request) {
 	}
 	loggedAuthorID := middleware.GetAuthorID(r.Context())
 	if loggedAuthorID == 0 {
-		response.BadRequest(w, "authorization required to update a post")
+		response.Unauthorized(w, "authorization required to update a post")
 		return
 	}
 	var title, body string
@@ -179,7 +180,7 @@ func (h *PostHandler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !canEditPost(existing, loggedAuthorID) {
-		response.BadRequest(w, "you can only edit your own posts")
+		response.Forbidden(w, "you can only edit your own posts")
 		return
 	}
 	post, err := h.svc.Update(r.Context(), uint(id), title, body, nil, categoryID, banner, files)
@@ -204,6 +205,7 @@ func (h *PostHandler) Update(w http.ResponseWriter, r *http.Request) {
 //	@Success		204	"No content"
 //	@Failure		400	{object}	response.Body
 //	@Failure		401	{object}	response.Body
+//	@Failure		403	{object}	response.Body
 //	@Failure		500	{object}	response.Body
 //	@Router			/posts/{id} [delete]
 func (h *PostHandler) Delete(w http.ResponseWriter, r *http.Request) {
@@ -214,7 +216,7 @@ func (h *PostHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 	loggedAuthorID := middleware.GetAuthorID(r.Context())
 	if loggedAuthorID == 0 {
-		response.BadRequest(w, "authorization required to delete a post")
+		response.Unauthorized(w, "authorization required to delete a post")
 		return
 	}
 	existing, err := h.svc.GetByID(r.Context(), uint(id))
@@ -223,7 +225,7 @@ func (h *PostHandler) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !canEditPost(existing, loggedAuthorID) {
-		response.BadRequest(w, "you can only delete your own posts")
+		response.Forbidden(w, "you can only delete your own posts")
 		return
 	}
 	if err := h.svc.Delete(r.Context(), uint(id)); err != nil {

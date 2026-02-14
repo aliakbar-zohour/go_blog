@@ -295,7 +295,12 @@ const docTemplate = `{
                 }
             },
             "put": {
-                "description": "Updates author name and/or avatar.",
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Updates own profile (name and/or avatar). Requires Authorization: Bearer \u003ctoken\u003e. You can only update yourself.",
                 "consumes": [
                     "multipart/form-data"
                 ],
@@ -352,6 +357,18 @@ const docTemplate = `{
                             "$ref": "#/definitions/response.Body"
                         }
                     },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/response.Body"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/response.Body"
+                        }
+                    },
                     "404": {
                         "description": "Not Found",
                         "schema": {
@@ -367,7 +384,12 @@ const docTemplate = `{
                 }
             },
             "delete": {
-                "description": "Deletes the author with the given ID.",
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Deletes own account. Requires Authorization: Bearer \u003ctoken\u003e. You can only delete yourself.",
                 "tags": [
                     "authors"
                 ],
@@ -387,6 +409,18 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.Body"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/response.Body"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
                         "schema": {
                             "$ref": "#/definitions/response.Body"
                         }
@@ -441,7 +475,12 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "description": "Creates a new category with the given name.",
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Creates a new category. Requires Authorization: Bearer \u003ctoken\u003e.",
                 "consumes": [
                     "application/x-www-form-urlencoded"
                 ],
@@ -482,6 +521,12 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.Body"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
                         "schema": {
                             "$ref": "#/definitions/response.Body"
                         }
@@ -542,7 +587,12 @@ const docTemplate = `{
                 }
             },
             "put": {
-                "description": "Updates the category name.",
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Updates the category name. Requires Authorization: Bearer \u003ctoken\u003e.",
                 "consumes": [
                     "application/x-www-form-urlencoded"
                 ],
@@ -593,6 +643,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/response.Body"
                         }
                     },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/response.Body"
+                        }
+                    },
                     "404": {
                         "description": "Not Found",
                         "schema": {
@@ -608,7 +664,12 @@ const docTemplate = `{
                 }
             },
             "delete": {
-                "description": "Deletes the category with the given ID.",
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Deletes the category. Requires Authorization: Bearer \u003ctoken\u003e.",
                 "tags": [
                     "categories"
                 ],
@@ -632,6 +693,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/response.Body"
                         }
                     },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/response.Body"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
@@ -643,7 +710,12 @@ const docTemplate = `{
         },
         "/comments/{id}": {
             "put": {
-                "description": "Updates the comment body.",
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Updates own comment. Requires Authorization: Bearer \u003ctoken\u003e. You can only edit your own comment.",
                 "consumes": [
                     "application/x-www-form-urlencoded"
                 ],
@@ -694,6 +766,18 @@ const docTemplate = `{
                             "$ref": "#/definitions/response.Body"
                         }
                     },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/response.Body"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/response.Body"
+                        }
+                    },
                     "404": {
                         "description": "Not Found",
                         "schema": {
@@ -709,7 +793,12 @@ const docTemplate = `{
                 }
             },
             "delete": {
-                "description": "Deletes the comment with the given ID.",
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Deletes own comment. Requires Authorization: Bearer \u003ctoken\u003e. You can only delete your own comment.",
                 "tags": [
                     "comments"
                 ],
@@ -729,6 +818,24 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.Body"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/response.Body"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/response.Body"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "$ref": "#/definitions/response.Body"
                         }
@@ -1025,6 +1132,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/response.Body"
                         }
                     },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/response.Body"
+                        }
+                    },
                     "404": {
                         "description": "Not Found",
                         "schema": {
@@ -1071,6 +1184,12 @@ const docTemplate = `{
                     },
                     "401": {
                         "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/response.Body"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
                         "schema": {
                             "$ref": "#/definitions/response.Body"
                         }
@@ -1140,7 +1259,12 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "description": "Creates a new comment on the given post.",
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Creates a new comment on the given post. Requires Authorization: Bearer \u003ctoken\u003e. Comment is linked to the logged-in author.",
                 "consumes": [
                     "application/x-www-form-urlencoded"
                 ],
@@ -1168,7 +1292,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Commenter name",
+                        "description": "Optional display name override",
                         "name": "author_name",
                         "in": "formData"
                     }
@@ -1194,6 +1318,12 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.Body"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
                         "schema": {
                             "$ref": "#/definitions/response.Body"
                         }
@@ -1298,7 +1428,12 @@ const docTemplate = `{
         "model.Comment": {
             "type": "object",
             "properties": {
+                "author_id": {
+                    "description": "set when user is logged in",
+                    "type": "integer"
+                },
                 "author_name": {
+                    "description": "optional display name (guest or override)",
                     "type": "string"
                 },
                 "body": {

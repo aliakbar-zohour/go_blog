@@ -11,6 +11,11 @@ import (
 	"gorm.io/gorm"
 )
 
+var (
+	ErrCommentForbidden = errors.New("you can only edit your own comment")
+	ErrDeleteCommentForbidden = errors.New("you can only delete your own comment")
+)
+
 type CommentService struct {
 	repo     *repository.CommentRepository
 	postRepo *repository.PostRepository
@@ -20,7 +25,7 @@ func NewCommentService(repo *repository.CommentRepository, postRepo *repository.
 	return &CommentService{repo: repo, postRepo: postRepo}
 }
 
-func (s *CommentService) Create(ctx context.Context, postID uint, body, authorName string) (*model.Comment, error) {
+func (s *CommentService) Create(ctx context.Context, postID uint, body, authorName string, authorID *uint) (*model.Comment, error) {
 	body = strings.TrimSpace(body)
 	if body == "" {
 		return nil, errors.New("body is required")
@@ -31,7 +36,7 @@ func (s *CommentService) Create(ctx context.Context, postID uint, body, authorNa
 		}
 		return nil, err
 	}
-	c := &model.Comment{PostID: postID, Body: body, AuthorName: strings.TrimSpace(authorName)}
+	c := &model.Comment{PostID: postID, Body: body, AuthorID: authorID, AuthorName: strings.TrimSpace(authorName)}
 	if err := s.repo.Create(ctx, c); err != nil {
 		return nil, err
 	}
@@ -46,13 +51,16 @@ func (s *CommentService) GetByID(ctx context.Context, id uint) (*model.Comment, 
 	return s.repo.GetByID(ctx, id)
 }
 
-func (s *CommentService) Update(ctx context.Context, id uint, body string) (*model.Comment, error) {
+func (s *CommentService) Update(ctx context.Context, id uint, body string, authorID uint) (*model.Comment, error) {
 	c, err := s.repo.GetByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
 		}
 		return nil, err
+	}
+	if c.AuthorID == nil || *c.AuthorID != authorID {
+		return nil, ErrCommentForbidden
 	}
 	if body != "" {
 		c.Body = strings.TrimSpace(body)
@@ -63,6 +71,16 @@ func (s *CommentService) Update(ctx context.Context, id uint, body string) (*mod
 	return s.repo.GetByID(ctx, id)
 }
 
-func (s *CommentService) Delete(ctx context.Context, id uint) error {
+func (s *CommentService) Delete(ctx context.Context, id uint, authorID uint) error {
+	c, err := s.repo.GetByID(ctx, id)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return gorm.ErrRecordNotFound
+		}
+		return err
+	}
+	if c.AuthorID == nil || *c.AuthorID != authorID {
+		return ErrDeleteCommentForbidden
+	}
 	return s.repo.Delete(ctx, id)
 }

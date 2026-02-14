@@ -60,7 +60,11 @@ definitions:
     type: object
   model.Comment:
     properties:
+      author_id:
+        description: set when user is logged in
+        type: integer
       author_name:
+        description: optional display name (guest or override)
         type: string
       body:
         type: string
@@ -285,7 +289,8 @@ paths:
       - authors
   /authors/{id}:
     delete:
-      description: Deletes the author with the given ID.
+      description: 'Deletes own account. Requires Authorization: Bearer <token>. You
+        can only delete yourself.'
       parameters:
       - description: Author ID
         in: path
@@ -299,10 +304,20 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/response.Body'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.Body'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/response.Body'
         "500":
           description: Internal Server Error
           schema:
             $ref: '#/definitions/response.Body'
+      security:
+      - Bearer: []
       summary: Delete an author
       tags:
       - authors
@@ -340,7 +355,8 @@ paths:
     put:
       consumes:
       - multipart/form-data
-      description: Updates author name and/or avatar.
+      description: 'Updates own profile (name and/or avatar). Requires Authorization:
+        Bearer <token>. You can only update yourself.'
       parameters:
       - description: Author ID
         in: path
@@ -371,6 +387,14 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/response.Body'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.Body'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/response.Body'
         "404":
           description: Not Found
           schema:
@@ -379,6 +403,8 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/response.Body'
+      security:
+      - Bearer: []
       summary: Update an author
       tags:
       - authors
@@ -409,7 +435,7 @@ paths:
     post:
       consumes:
       - application/x-www-form-urlencoded
-      description: Creates a new category with the given name.
+      description: 'Creates a new category. Requires Authorization: Bearer <token>.'
       parameters:
       - description: Category name
         in: formData
@@ -432,12 +458,18 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/response.Body'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.Body'
+      security:
+      - Bearer: []
       summary: Create a category
       tags:
       - categories
   /categories/{id}:
     delete:
-      description: Deletes the category with the given ID.
+      description: 'Deletes the category. Requires Authorization: Bearer <token>.'
       parameters:
       - description: Category ID
         in: path
@@ -451,10 +483,16 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/response.Body'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.Body'
         "500":
           description: Internal Server Error
           schema:
             $ref: '#/definitions/response.Body'
+      security:
+      - Bearer: []
       summary: Delete a category
       tags:
       - categories
@@ -492,7 +530,7 @@ paths:
     put:
       consumes:
       - application/x-www-form-urlencoded
-      description: Updates the category name.
+      description: 'Updates the category name. Requires Authorization: Bearer <token>.'
       parameters:
       - description: Category ID
         in: path
@@ -519,6 +557,10 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/response.Body'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.Body'
         "404":
           description: Not Found
           schema:
@@ -527,12 +569,15 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/response.Body'
+      security:
+      - Bearer: []
       summary: Update a category
       tags:
       - categories
   /comments/{id}:
     delete:
-      description: Deletes the comment with the given ID.
+      description: 'Deletes own comment. Requires Authorization: Bearer <token>. You
+        can only delete your own comment.'
       parameters:
       - description: Comment ID
         in: path
@@ -546,17 +591,32 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/response.Body'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.Body'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/response.Body'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Body'
         "500":
           description: Internal Server Error
           schema:
             $ref: '#/definitions/response.Body'
+      security:
+      - Bearer: []
       summary: Delete a comment
       tags:
       - comments
     put:
       consumes:
       - application/x-www-form-urlencoded
-      description: Updates the comment body.
+      description: 'Updates own comment. Requires Authorization: Bearer <token>. You
+        can only edit your own comment.'
       parameters:
       - description: Comment ID
         in: path
@@ -583,6 +643,14 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/response.Body'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.Body'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/response.Body'
         "404":
           description: Not Found
           schema:
@@ -591,6 +659,8 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/response.Body'
+      security:
+      - Bearer: []
       summary: Update a comment
       tags:
       - comments
@@ -703,6 +773,10 @@ paths:
           description: Unauthorized
           schema:
             $ref: '#/definitions/response.Body'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/response.Body'
         "500":
           description: Internal Server Error
           schema:
@@ -794,6 +868,10 @@ paths:
           description: Unauthorized
           schema:
             $ref: '#/definitions/response.Body'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/response.Body'
         "404":
           description: Not Found
           schema:
@@ -844,7 +922,8 @@ paths:
     post:
       consumes:
       - application/x-www-form-urlencoded
-      description: Creates a new comment on the given post.
+      description: 'Creates a new comment on the given post. Requires Authorization:
+        Bearer <token>. Comment is linked to the logged-in author.'
       parameters:
       - description: Post ID
         in: path
@@ -856,7 +935,7 @@ paths:
         name: body
         required: true
         type: string
-      - description: Commenter name
+      - description: Optional display name override
         in: formData
         name: author_name
         type: string
@@ -876,10 +955,16 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/response.Body'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.Body'
         "404":
           description: Not Found
           schema:
             $ref: '#/definitions/response.Body'
+      security:
+      - Bearer: []
       summary: Create a comment
       tags:
       - comments

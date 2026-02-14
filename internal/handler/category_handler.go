@@ -39,13 +39,15 @@ func (h *CategoryHandler) List(w http.ResponseWriter, r *http.Request) {
 // Create godoc
 //
 //	@Summary		Create a category
-//	@Description	Creates a new category with the given name.
+//	@Description	Creates a new category. Requires Authorization: Bearer <token>.
 //	@Tags			categories
 //	@Accept			application/x-www-form-urlencoded
 //	@Produce		json
+//	@Security		Bearer
 //	@Param			name	formData	string	true	"Category name"
 //	@Success		201		{object}	response.Body{data=model.Category}
 //	@Failure		400		{object}	response.Body
+//	@Failure		401		{object}	response.Body
 //	@Router			/categories [post]
 func (h *CategoryHandler) Create(w http.ResponseWriter, r *http.Request) {
 	_ = r.ParseForm()
@@ -90,14 +92,16 @@ func (h *CategoryHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 // Update godoc
 //
 //	@Summary		Update a category
-//	@Description	Updates the category name.
+//	@Description	Updates the category name. Requires Authorization: Bearer <token>.
 //	@Tags			categories
 //	@Accept			application/x-www-form-urlencoded
 //	@Produce		json
+//	@Security		Bearer
 //	@Param			id		path		int		true	"Category ID"
 //	@Param			name	formData	string	false	"Category name"
 //	@Success		200		{object}	response.Body{data=model.Category}
 //	@Failure		400		{object}	response.Body
+//	@Failure		401		{object}	response.Body
 //	@Failure		404		{object}	response.Body
 //	@Failure		500		{object}	response.Body
 //	@Router			/categories/{id} [put]
@@ -124,11 +128,13 @@ func (h *CategoryHandler) Update(w http.ResponseWriter, r *http.Request) {
 // Delete godoc
 //
 //	@Summary		Delete a category
-//	@Description	Deletes the category with the given ID.
+//	@Description	Deletes the category. Requires Authorization: Bearer <token>.
 //	@Tags			categories
+//	@Security		Bearer
 //	@Param			id	path	int	true	"Category ID"
 //	@Success		204	"No content"
 //	@Failure		400	{object}	response.Body
+//	@Failure		401	{object}	response.Body
 //	@Failure		500	{object}	response.Body
 //	@Router			/categories/{id} [delete]
 func (h *CategoryHandler) Delete(w http.ResponseWriter, r *http.Request) {
