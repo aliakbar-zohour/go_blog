@@ -1,0 +1,11 @@
+# Never copy host docs – generate them inside Docker from source
+docs
+# Avoid bloating the build context
+.git
+.gitignore
+*.md
+.env
+uploads
+*.exe
+api
+api.exe

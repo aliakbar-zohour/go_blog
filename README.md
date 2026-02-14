@@ -1,29 +1,41 @@
 # Go Blog API
 
-A REST API for a blog built with Go, PostgreSQL, and support for image and video uploads.
+REST API for a blog built with **Go**, **PostgreSQL**, and **Swagger UI**. Supports posts (with banner, author, category), authors, categories, comments, and image/video uploads.
 
 ---
 
 ## Table of contents
 
+- [Features](#features)
 - [Requirements](#requirements)
 - [Project structure](#project-structure)
 - [Quick start with Docker](#quick-start-with-docker)
 - [Local development (without Docker)](#local-development-without-docker)
 - [Environment variables](#environment-variables)
 - [API endpoints](#api-endpoints)
-- [Testing with Swagger UI](#testing-with-swagger-ui)
-- [Regenerating Swagger docs](#regenerating-swagger-docs)
+- [Swagger UI](#swagger-ui)
+- [Regenerating Swagger docs (local)](#regenerating-swagger-docs-local)
 - [Building and running the binary](#building-and-running-the-binary)
 - [License](#license)
 
 ---
 
+## Features
+
+- **Posts** – CRUD, banner image, optional author and category, extra media (images/videos)
+- **Authors** – CRUD with name and avatar image
+- **Categories** – CRUD; filter posts by category
+- **Comments** – List/create per post; update/delete by comment ID
+- **Swagger UI** – Interactive API docs at `/docs/` (generated from code in Docker)
+- **File uploads** – Banners, avatars, post media; served under `/uploads/`
+
+---
+
 ## Requirements
 
-- **Go 1.21+** (for local run and building)
-- **Docker and Docker Compose** (optional; for running app + PostgreSQL in containers)
-- **PostgreSQL 14+** (if running locally without Docker)
+- **Go 1.23+** (for local run and building)
+- **Docker and Docker Compose** (optional; runs API + PostgreSQL)
+- **PostgreSQL 14+** (if running without Docker)
 
 ---
 
@@ -31,24 +43,24 @@ A REST API for a blog built with Go, PostgreSQL, and support for image and video
 
 | Path | Description |
 |------|-------------|
-| `cmd/api/main.go` | Application entry point; loads config, DB, services, starts HTTP server |
-| `internal/config` | Loads settings from environment and defaults |
+| `cmd/api/main.go` | Entry point; config, DB, services, HTTP server |
+| `internal/config` | Settings from environment and defaults |
 | `internal/database` | PostgreSQL connection and auto-migration |
-| `internal/model` | Post, Media, Author, Category, Comment models |
-| `internal/repository` | Data access layer (CRUD for posts, media, authors, categories, comments) |
+| `internal/model` | Post, Media, Author, Category, Comment |
+| `internal/repository` | Data access (CRUD for all entities) |
 | `internal/service` | Business logic and validation |
-| `internal/handler` | HTTP handlers for API routes |
-| `internal/router` | Route definitions and middleware wiring |
-| `internal/middleware` | Panic recovery, security headers, request logging |
-| `internal/upload` | File type/size validation and safe storage |
-| `pkg/response` | Shared JSON response helpers |
-| `docs/` | Generated Swagger/OpenAPI docs (do not edit by hand) |
+| `internal/handler` | HTTP handlers and Swagger annotations |
+| `internal/router` | Routes and middleware |
+| `internal/middleware` | Panic recovery, security headers, logging |
+| `internal/upload` | File validation and storage (banners, avatars, media) |
+| `pkg/response` | Shared JSON response format |
+| `docs/` | Generated Swagger (by `swag init` or inside Docker) |
 
 ---
 
 ## Quick start with Docker
 
-This is the simplest way to run the API and database together.
+Run API and PostgreSQL with one command.
 
 ### 1. Clone and enter the project
 
@@ -57,23 +69,29 @@ git clone https://github.com/aliakbar-zohour/go_blog.git
 cd go_blog
 ```
 
-### 2. Build and start services
+### 2. Build and start
 
 ```bash
-docker compose up --build
+docker compose up --build -d
 ```
 
-- **API** will be available at **http://localhost:8080**
-- **PostgreSQL** runs in a container; no local install needed.
-- Uploaded files are stored in a Docker volume.
+- **API:** **http://localhost:8080**
+- **Swagger UI:** **http://localhost:8080/docs/** or **http://localhost:8080/docs/index.html**
+- PostgreSQL and uploads use Docker volumes.
 
-### 3. Stop services
+Swagger is generated **inside the image** from the handler source (the `docs/` folder on your machine is not used). After code or Swagger comment changes, run again:
+
+```bash
+docker compose up --build -d
+```
+
+### 3. Stop
 
 ```bash
 docker compose down
 ```
 
-To also remove the database volume:
+Remove database and uploads volumes:
 
 ```bash
 docker compose down -v
@@ -83,42 +101,32 @@ docker compose down -v
 
 ## Local development (without Docker)
 
-Use this when you want to run the API on your machine and use a local (or remote) PostgreSQL instance.
+### 1. PostgreSQL
 
-### 1. Install and run PostgreSQL
+Install PostgreSQL 14+, create a database:
 
-- Install PostgreSQL 14+ and ensure it is running.
-- Create a database, for example: `createdb go_blog`
+```bash
+createdb go_blog
+```
 
-### 2. Clone the project
+### 2. Clone and env
 
 ```bash
 git clone https://github.com/aliakbar-zohour/go_blog.git
 cd go_blog
-```
-
-### 3. Copy environment file and set variables
-
-```bash
 cp .env.example .env
 ```
 
-Edit `.env` and set at least:
+Edit `.env`: set `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`.
 
-- `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`
-
-### 4. Install dependencies and run the API
+### 3. Run
 
 ```bash
 go mod download
 go run ./cmd/api
 ```
 
-The server listens on **http://localhost:8080** (or the port set in `PORT`).
-
-### 5. (Optional) Create uploads directory
-
-If you use file uploads and keep the default `UPLOAD_DIR=uploads`, ensure the directory exists or the app will create it on first upload.
+Server: **http://localhost:8080**. Create an `uploads` directory if you use file uploads (or rely on auto-creation).
 
 ---
 
@@ -144,86 +152,79 @@ If you use file uploads and keep the default `UPLOAD_DIR=uploads`, ensure the di
 
 | Method | Path | Description |
 |--------|------|-------------|
-| `GET` | `/api/posts` | List posts (query: `limit`, `offset`, `category_id` to filter by category) |
-| `POST` | `/api/posts` | Create post (form: `title`, `body`, `author_id`, `category_id`, `banner`, `files[]`) |
-| `GET` | `/api/posts/:id` | Get one post by ID (includes author and category) |
-| `PUT` | `/api/posts/:id` | Update post (form: `title`, `body`, `author_id`, `category_id`, `banner`, `files[]`; all optional) |
-| `DELETE` | `/api/posts/:id` | Delete post (soft delete) |
+| `GET` | `/api/posts` | List posts (`limit`, `offset`, `category_id` to filter) |
+| `POST` | `/api/posts` | Create (form: `title`, `body`, `author_id`, `category_id`, `banner`, `files[]`) |
+| `GET` | `/api/posts/:id` | Get one (includes author and category) |
+| `PUT` | `/api/posts/:id` | Update (form: same as create; all optional) |
+| `DELETE` | `/api/posts/:id` | Soft delete |
 
 ### Authors
 
 | Method | Path | Description |
 |--------|------|-------------|
-| `GET` | `/api/authors` | List all authors |
-| `POST` | `/api/authors` | Create author (form: `name`, `avatar`) |
-| `GET` | `/api/authors/:id` | Get one author |
-| `PUT` | `/api/authors/:id` | Update author (form: `name`, `avatar`) |
-| `DELETE` | `/api/authors/:id` | Delete author |
+| `GET` | `/api/authors` | List all |
+| `POST` | `/api/authors` | Create (form: `name`, `avatar`) |
+| `GET` | `/api/authors/:id` | Get one |
+| `PUT` | `/api/authors/:id` | Update (form: `name`, `avatar`) |
+| `DELETE` | `/api/authors/:id` | Delete |
 
 ### Categories
 
 | Method | Path | Description |
 |--------|------|-------------|
-| `GET` | `/api/categories` | List all categories |
-| `POST` | `/api/categories` | Create category (form: `name`) |
-| `GET` | `/api/categories/:id` | Get one category |
-| `PUT` | `/api/categories/:id` | Update category (form: `name`) |
-| `DELETE` | `/api/categories/:id` | Delete category |
+| `GET` | `/api/categories` | List all |
+| `POST` | `/api/categories` | Create (form: `name`) |
+| `GET` | `/api/categories/:id` | Get one |
+| `PUT` | `/api/categories/:id` | Update (form: `name`) |
+| `DELETE` | `/api/categories/:id` | Delete |
 
 ### Comments
 
 | Method | Path | Description |
 |--------|------|-------------|
 | `GET` | `/api/posts/:postId/comments` | List comments for a post |
-| `POST` | `/api/posts/:postId/comments` | Create comment (form: `body`, `author_name`) |
-| `PUT` | `/api/comments/:id` | Update comment (form: `body`) |
-| `DELETE` | `/api/comments/:id` | Delete comment |
+| `POST` | `/api/posts/:postId/comments` | Create (form: `body`, `author_name`) |
+| `PUT` | `/api/comments/:id` | Update (form: `body`) |
+| `DELETE` | `/api/comments/:id` | Delete |
 
-- Uploaded files are served under **`/uploads/<path>`** (e.g. `/uploads/posts/1/xyz.jpg`, `/uploads/banners/...`, `/uploads/avatars/...`).
-- **Allowed image extensions:** jpg, jpeg, png, gif, webp  
-- **Allowed video extensions:** mp4, webm, mov  
-
-All JSON responses use a common shape: `{ "success": true|false, "data": ..., "error": "..." }`.
+- **Static files:** `/uploads/<path>` (e.g. `/uploads/posts/1/xyz.jpg`, `/uploads/banners/...`, `/uploads/avatars/...`).
+- **Images:** jpg, jpeg, png, gif, webp. **Videos:** mp4, webm, mov.
+- **Response shape:** `{ "success": true|false, "data": ..., "error": "..." }`.
 
 ---
 
-## Testing with Swagger UI
+## Swagger UI
 
-After the server is running (Docker or local):
+With the server running (Docker or local):
 
-1. Open in a browser: **http://localhost:8080/docs/index.html**
-2. Use **Try it out** on any endpoint, fill parameters, then **Execute**.
-3. The response (including status and body) is shown on the same page; if the API returns an error, the `error` field and status code are visible there.
+1. Open **http://localhost:8080/docs/** or **http://localhost:8080/docs/index.html**
+2. Use **Try it out** on any endpoint, set parameters, then **Execute**
+3. Response body and status (including errors) are shown on the page
+
+In Docker, Swagger is generated at build time from the handler code; no need to run `swag init` on your machine for the container.
 
 ---
 
-## Regenerating Swagger docs
+## Regenerating Swagger docs (local)
 
-If you change Swagger comments in `cmd/api/main.go` or `internal/handler/post_handler.go`, regenerate the docs:
+When you change Swagger comments in `cmd/api/main.go` or any handler under `internal/handler/`, regenerate docs locally:
 
 ```bash
 go run github.com/swaggo/swag/cmd/swag@latest init -g cmd/api/main.go -d . -o docs
 ```
 
-Then rebuild or restart the app so the new docs are served.
+Then restart the app (or rebuild the Docker image with `docker compose up --build -d`).
 
 ---
 
 ## Building and running the binary
 
-Build:
-
 ```bash
 go build -o api ./cmd/api
-```
-
-Run (set env vars or use `.env`):
-
-```bash
 ./api
 ```
 
-On Windows:
+Windows:
 
 ```bash
 go build -o api.exe ./cmd/api
