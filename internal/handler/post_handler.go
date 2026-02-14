@@ -23,15 +23,18 @@ func NewPostHandler(svc *service.PostService) *PostHandler {
 // Create godoc
 //
 //	@Summary		Create a post
-//	@Description	Creates a new post with title, body, and optional image/video files.
+//	@Description	Creates a new post with title, body, optional banner, author, category, and media files.
 //	@Tags			posts
 //	@Accept			multipart/form-data
 //	@Produce		json
-//	@Param			title	formData	string	true	"Post title"
-//	@Param			body	formData	string	false	"Post body"
-//	@Param			files	formData	file	false	"Image or video files"
-//	@Success		201		{object}	response.Body{data=model.Post}
-//	@Failure		400		{object}	response.Body
+//	@Param			title		formData	string	true	"Post title"
+//	@Param			body		formData	string	false	"Post body"
+//	@Param			author_id	formData	int		false	"Author ID"
+//	@Param			category_id	formData	int		false	"Category ID"
+//	@Param			banner		formData	file	false	"Banner image"
+//	@Param			files		formData	file	false	"Image or video files"
+//	@Success		201			{object}	response.Body{data=model.Post}
+//	@Failure		400			{object}	response.Body
 //	@Router			/posts [post]
 func (h *PostHandler) Create(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseMultipartForm(32 << 20); err != nil {
@@ -87,13 +90,14 @@ func (h *PostHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 // List godoc
 //
 //	@Summary		List posts
-//	@Description	Returns a paginated list of posts (limit and offset).
+//	@Description	Returns a paginated list of posts. Optionally filter by category_id.
 //	@Tags			posts
 //	@Produce		json
-//	@Param			limit	query		int	false	"Items per page (default 20)"
-//	@Param			offset	query		int	false	"Number of items to skip"
-//	@Success		200		{object}	response.Body{data=[]model.Post}
-//	@Failure		500		{object}	response.Body
+//	@Param			limit		query		int	false	"Items per page (default 20)"
+//	@Param			offset		query		int	false	"Number of items to skip"
+//	@Param			category_id	query		int	false	"Filter by category ID"
+//	@Success		200			{object}	response.Body{data=[]model.Post}
+//	@Failure		500			{object}	response.Body
 //	@Router			/posts [get]
 func (h *PostHandler) List(w http.ResponseWriter, r *http.Request) {
 	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
@@ -110,18 +114,21 @@ func (h *PostHandler) List(w http.ResponseWriter, r *http.Request) {
 // Update godoc
 //
 //	@Summary		Update a post
-//	@Description	Updates a post. Empty fields are left unchanged. New files are optional.
+//	@Description	Updates a post. Empty fields are left unchanged. New banner and files are optional.
 //	@Tags			posts
 //	@Accept			multipart/form-data
 //	@Produce		json
-//	@Param			id		path		int		true	"Post ID"
-//	@Param			title	formData	string	false	"New title"
-//	@Param			body	formData	string	false	"New body"
-//	@Param			files	formData	file	false	"New files"
-//	@Success		200		{object}	response.Body{data=model.Post}
-//	@Failure		400		{object}	response.Body
-//	@Failure		404		{object}	response.Body
-//	@Failure		500		{object}	response.Body
+//	@Param			id			path		int		true	"Post ID"
+//	@Param			title		formData	string	false	"New title"
+//	@Param			body		formData	string	false	"New body"
+//	@Param			author_id	formData	int		false	"Author ID"
+//	@Param			category_id	formData	int		false	"Category ID"
+//	@Param			banner		formData	file	false	"New banner image"
+//	@Param			files		formData	file	false	"New media files"
+//	@Success		200			{object}	response.Body{data=model.Post}
+//	@Failure		400			{object}	response.Body
+//	@Failure		404			{object}	response.Body
+//	@Failure		500			{object}	response.Body
 //	@Router			/posts/{id} [put]
 func (h *PostHandler) Update(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseUint(chi.URLParam(r, "id"), 10, 32)

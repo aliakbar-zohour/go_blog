@@ -24,6 +24,21 @@ definitions:
       updated_at:
         type: string
     type: object
+  model.Comment:
+    properties:
+      author_name:
+        type: string
+      body:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: integer
+      post_id:
+        type: integer
+      updated_at:
+        type: string
+    type: object
   model.Media:
     properties:
       created_at:
@@ -90,9 +105,377 @@ info:
   title: Go Blog API
   version: "1.0"
 paths:
+  /authors:
+    get:
+      description: Returns all authors.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Body'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/model.Author'
+                  type: array
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Body'
+      summary: List authors
+      tags:
+      - authors
+    post:
+      consumes:
+      - multipart/form-data
+      description: Creates a new author with name and optional avatar image.
+      parameters:
+      - description: Author name
+        in: formData
+        name: name
+        required: true
+        type: string
+      - description: Avatar image
+        in: formData
+        name: avatar
+        type: file
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Body'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.Author'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Body'
+      summary: Create an author
+      tags:
+      - authors
+  /authors/{id}:
+    delete:
+      description: Deletes the author with the given ID.
+      parameters:
+      - description: Author ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: No content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Body'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Body'
+      summary: Delete an author
+      tags:
+      - authors
+    get:
+      description: Returns the author with the given ID.
+      parameters:
+      - description: Author ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Body'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.Author'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Body'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Body'
+      summary: Get an author by ID
+      tags:
+      - authors
+    put:
+      consumes:
+      - multipart/form-data
+      description: Updates author name and/or avatar.
+      parameters:
+      - description: Author ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Author name
+        in: formData
+        name: name
+        type: string
+      - description: Avatar image
+        in: formData
+        name: avatar
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Body'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.Author'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Body'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Body'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Body'
+      summary: Update an author
+      tags:
+      - authors
+  /categories:
+    get:
+      description: Returns all categories.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Body'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/model.Category'
+                  type: array
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Body'
+      summary: List categories
+      tags:
+      - categories
+    post:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: Creates a new category with the given name.
+      parameters:
+      - description: Category name
+        in: formData
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Body'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.Category'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Body'
+      summary: Create a category
+      tags:
+      - categories
+  /categories/{id}:
+    delete:
+      description: Deletes the category with the given ID.
+      parameters:
+      - description: Category ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: No content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Body'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Body'
+      summary: Delete a category
+      tags:
+      - categories
+    get:
+      description: Returns the category with the given ID.
+      parameters:
+      - description: Category ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Body'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.Category'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Body'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Body'
+      summary: Get a category by ID
+      tags:
+      - categories
+    put:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: Updates the category name.
+      parameters:
+      - description: Category ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Category name
+        in: formData
+        name: name
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Body'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.Category'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Body'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Body'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Body'
+      summary: Update a category
+      tags:
+      - categories
+  /comments/{id}:
+    delete:
+      description: Deletes the comment with the given ID.
+      parameters:
+      - description: Comment ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: No content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Body'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Body'
+      summary: Delete a comment
+      tags:
+      - comments
+    put:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: Updates the comment body.
+      parameters:
+      - description: Comment ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Comment body
+        in: formData
+        name: body
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Body'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.Comment'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Body'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Body'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Body'
+      summary: Update a comment
+      tags:
+      - comments
   /posts:
     get:
-      description: Returns a paginated list of posts (limit and offset).
+      description: Returns a paginated list of posts. Optionally filter by category_id.
       parameters:
       - description: Items per page (default 20)
         in: query
@@ -101,6 +484,10 @@ paths:
       - description: Number of items to skip
         in: query
         name: offset
+        type: integer
+      - description: Filter by category ID
+        in: query
+        name: category_id
         type: integer
       produces:
       - application/json
@@ -126,7 +513,8 @@ paths:
     post:
       consumes:
       - multipart/form-data
-      description: Creates a new post with title, body, and optional image/video files.
+      description: Creates a new post with title, body, optional banner, author, category,
+        and media files.
       parameters:
       - description: Post title
         in: formData
@@ -137,6 +525,18 @@ paths:
         in: formData
         name: body
         type: string
+      - description: Author ID
+        in: formData
+        name: author_id
+        type: integer
+      - description: Category ID
+        in: formData
+        name: category_id
+        type: integer
+      - description: Banner image
+        in: formData
+        name: banner
+        type: file
       - description: Image or video files
         in: formData
         name: files
@@ -217,8 +617,8 @@ paths:
     put:
       consumes:
       - multipart/form-data
-      description: Updates a post. Empty fields are left unchanged. New files are
-        optional.
+      description: Updates a post. Empty fields are left unchanged. New banner and
+        files are optional.
       parameters:
       - description: Post ID
         in: path
@@ -233,7 +633,19 @@ paths:
         in: formData
         name: body
         type: string
-      - description: New files
+      - description: Author ID
+        in: formData
+        name: author_id
+        type: integer
+      - description: Category ID
+        in: formData
+        name: category_id
+        type: integer
+      - description: New banner image
+        in: formData
+        name: banner
+        type: file
+      - description: New media files
         in: formData
         name: files
         type: file
@@ -264,6 +676,82 @@ paths:
       summary: Update a post
       tags:
       - posts
+  /posts/{postId}/comments:
+    get:
+      description: Returns all comments for the given post ID.
+      parameters:
+      - description: Post ID
+        in: path
+        name: postId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Body'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/model.Comment'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Body'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Body'
+      summary: List comments for a post
+      tags:
+      - comments
+    post:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: Creates a new comment on the given post.
+      parameters:
+      - description: Post ID
+        in: path
+        name: postId
+        required: true
+        type: integer
+      - description: Comment body
+        in: formData
+        name: body
+        required: true
+        type: string
+      - description: Commenter name
+        in: formData
+        name: author_name
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Body'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.Comment'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Body'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Body'
+      summary: Create a comment
+      tags:
+      - comments
 schemes:
 - http
 swagger: "2.0"

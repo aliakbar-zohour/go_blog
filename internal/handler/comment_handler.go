@@ -18,6 +18,17 @@ func NewCommentHandler(svc *service.CommentService) *CommentHandler {
 	return &CommentHandler{svc: svc}
 }
 
+// ListByPostID godoc
+//
+//	@Summary		List comments for a post
+//	@Description	Returns all comments for the given post ID.
+//	@Tags			comments
+//	@Produce		json
+//	@Param			postId	path		int	true	"Post ID"
+//	@Success		200		{object}	response.Body{data=[]model.Comment}
+//	@Failure		400		{object}	response.Body
+//	@Failure		500		{object}	response.Body
+//	@Router			/posts/{postId}/comments [get]
 func (h *CommentHandler) ListByPostID(w http.ResponseWriter, r *http.Request) {
 	postID, err := strconv.ParseUint(chi.URLParam(r, "postId"), 10, 32)
 	if err != nil {
@@ -32,6 +43,20 @@ func (h *CommentHandler) ListByPostID(w http.ResponseWriter, r *http.Request) {
 	response.OK(w, list)
 }
 
+// Create godoc
+//
+//	@Summary		Create a comment
+//	@Description	Creates a new comment on the given post.
+//	@Tags			comments
+//	@Accept			application/x-www-form-urlencoded
+//	@Produce		json
+//	@Param			postId		path		int		true	"Post ID"
+//	@Param			body		formData	string	true	"Comment body"
+//	@Param			author_name	formData	string	false	"Commenter name"
+//	@Success		201			{object}	response.Body{data=model.Comment}
+//	@Failure		400			{object}	response.Body
+//	@Failure		404			{object}	response.Body
+//	@Router			/posts/{postId}/comments [post]
 func (h *CommentHandler) Create(w http.ResponseWriter, r *http.Request) {
 	postID, err := strconv.ParseUint(chi.URLParam(r, "postId"), 10, 32)
 	if err != nil {
@@ -53,6 +78,20 @@ func (h *CommentHandler) Create(w http.ResponseWriter, r *http.Request) {
 	response.Created(w, c)
 }
 
+// Update godoc
+//
+//	@Summary		Update a comment
+//	@Description	Updates the comment body.
+//	@Tags			comments
+//	@Accept			application/x-www-form-urlencoded
+//	@Produce		json
+//	@Param			id		path		int		true	"Comment ID"
+//	@Param			body	formData	string	false	"Comment body"
+//	@Success		200		{object}	response.Body{data=model.Comment}
+//	@Failure		400		{object}	response.Body
+//	@Failure		404		{object}	response.Body
+//	@Failure		500		{object}	response.Body
+//	@Router			/comments/{id} [put]
 func (h *CommentHandler) Update(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseUint(chi.URLParam(r, "id"), 10, 32)
 	if err != nil {
@@ -73,6 +112,16 @@ func (h *CommentHandler) Update(w http.ResponseWriter, r *http.Request) {
 	response.OK(w, c)
 }
 
+// Delete godoc
+//
+//	@Summary		Delete a comment
+//	@Description	Deletes the comment with the given ID.
+//	@Tags			comments
+//	@Param			id	path	int	true	"Comment ID"
+//	@Success		204	"No content"
+//	@Failure		400	{object}	response.Body
+//	@Failure		500	{object}	response.Body
+//	@Router			/comments/{id} [delete]
 func (h *CommentHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseUint(chi.URLParam(r, "id"), 10, 32)
 	if err != nil {

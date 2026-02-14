@@ -15,9 +15,604 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/authors": {
+            "get": {
+                "description": "Returns all authors.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "authors"
+                ],
+                "summary": "List authors",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Body"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/model.Author"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Body"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Creates a new author with name and optional avatar image.",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "authors"
+                ],
+                "summary": "Create an author",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Author name",
+                        "name": "name",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "file",
+                        "description": "Avatar image",
+                        "name": "avatar",
+                        "in": "formData"
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Body"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/model.Author"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.Body"
+                        }
+                    }
+                }
+            }
+        },
+        "/authors/{id}": {
+            "get": {
+                "description": "Returns the author with the given ID.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "authors"
+                ],
+                "summary": "Get an author by ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Author ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Body"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/model.Author"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.Body"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/response.Body"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "Updates author name and/or avatar.",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "authors"
+                ],
+                "summary": "Update an author",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Author ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Author name",
+                        "name": "name",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "file",
+                        "description": "Avatar image",
+                        "name": "avatar",
+                        "in": "formData"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Body"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/model.Author"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.Body"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/response.Body"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Body"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Deletes the author with the given ID.",
+                "tags": [
+                    "authors"
+                ],
+                "summary": "Delete an author",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Author ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.Body"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Body"
+                        }
+                    }
+                }
+            }
+        },
+        "/categories": {
+            "get": {
+                "description": "Returns all categories.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "categories"
+                ],
+                "summary": "List categories",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Body"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/model.Category"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Body"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Creates a new category with the given name.",
+                "consumes": [
+                    "application/x-www-form-urlencoded"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "categories"
+                ],
+                "summary": "Create a category",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Category name",
+                        "name": "name",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Body"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/model.Category"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.Body"
+                        }
+                    }
+                }
+            }
+        },
+        "/categories/{id}": {
+            "get": {
+                "description": "Returns the category with the given ID.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "categories"
+                ],
+                "summary": "Get a category by ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Category ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Body"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/model.Category"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.Body"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/response.Body"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "Updates the category name.",
+                "consumes": [
+                    "application/x-www-form-urlencoded"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "categories"
+                ],
+                "summary": "Update a category",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Category ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Category name",
+                        "name": "name",
+                        "in": "formData"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Body"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/model.Category"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.Body"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/response.Body"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Body"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Deletes the category with the given ID.",
+                "tags": [
+                    "categories"
+                ],
+                "summary": "Delete a category",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Category ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.Body"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Body"
+                        }
+                    }
+                }
+            }
+        },
+        "/comments/{id}": {
+            "put": {
+                "description": "Updates the comment body.",
+                "consumes": [
+                    "application/x-www-form-urlencoded"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "comments"
+                ],
+                "summary": "Update a comment",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Comment ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Comment body",
+                        "name": "body",
+                        "in": "formData"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Body"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/model.Comment"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.Body"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/response.Body"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Body"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Deletes the comment with the given ID.",
+                "tags": [
+                    "comments"
+                ],
+                "summary": "Delete a comment",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Comment ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.Body"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Body"
+                        }
+                    }
+                }
+            }
+        },
         "/posts": {
             "get": {
-                "description": "Returns a paginated list of posts (limit and offset).",
+                "description": "Returns a paginated list of posts. Optionally filter by category_id.",
                 "produces": [
                     "application/json"
                 ],
@@ -36,6 +631,12 @@ const docTemplate = `{
                         "type": "integer",
                         "description": "Number of items to skip",
                         "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Filter by category ID",
+                        "name": "category_id",
                         "in": "query"
                     }
                 ],
@@ -70,7 +671,7 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "description": "Creates a new post with title, body, and optional image/video files.",
+                "description": "Creates a new post with title, body, optional banner, author, category, and media files.",
                 "consumes": [
                     "multipart/form-data"
                 ],
@@ -93,6 +694,24 @@ const docTemplate = `{
                         "type": "string",
                         "description": "Post body",
                         "name": "body",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Author ID",
+                        "name": "author_id",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Category ID",
+                        "name": "category_id",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "file",
+                        "description": "Banner image",
+                        "name": "banner",
                         "in": "formData"
                     },
                     {
@@ -183,7 +802,7 @@ const docTemplate = `{
                 }
             },
             "put": {
-                "description": "Updates a post. Empty fields are left unchanged. New files are optional.",
+                "description": "Updates a post. Empty fields are left unchanged. New banner and files are optional.",
                 "consumes": [
                     "multipart/form-data"
                 ],
@@ -215,8 +834,26 @@ const docTemplate = `{
                         "in": "formData"
                     },
                     {
+                        "type": "integer",
+                        "description": "Author ID",
+                        "name": "author_id",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Category ID",
+                        "name": "category_id",
+                        "in": "formData"
+                    },
+                    {
                         "type": "file",
-                        "description": "New files",
+                        "description": "New banner image",
+                        "name": "banner",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "file",
+                        "description": "New media files",
                         "name": "files",
                         "in": "formData"
                     }
@@ -293,6 +930,129 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/posts/{postId}/comments": {
+            "get": {
+                "description": "Returns all comments for the given post ID.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "comments"
+                ],
+                "summary": "List comments for a post",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Post ID",
+                        "name": "postId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Body"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/model.Comment"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.Body"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Body"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Creates a new comment on the given post.",
+                "consumes": [
+                    "application/x-www-form-urlencoded"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "comments"
+                ],
+                "summary": "Create a comment",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Post ID",
+                        "name": "postId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Comment body",
+                        "name": "body",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Commenter name",
+                        "name": "author_name",
+                        "in": "formData"
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Body"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/model.Comment"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.Body"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/response.Body"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -327,6 +1087,29 @@ const docTemplate = `{
                 },
                 "name": {
                     "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.Comment": {
+            "type": "object",
+            "properties": {
+                "author_name": {
+                    "type": "string"
+                },
+                "body": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "post_id": {
+                    "type": "integer"
                 },
                 "updated_at": {
                     "type": "string"
