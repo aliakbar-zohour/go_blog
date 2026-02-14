@@ -1,0 +1,9 @@
+.env
+uploads/
+api
+*.exe
+*.test
+vendor/
+.idea/
+.vscode/
+*.log
