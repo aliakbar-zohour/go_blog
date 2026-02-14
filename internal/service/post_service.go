@@ -24,16 +24,22 @@ func NewPostService(postRepo *repository.PostRepository, mediaRepo *repository.M
 	return &PostService{postRepo: postRepo, mediaRepo: mediaRepo, cfg: cfg}
 }
 
-func (s *PostService) Create(ctx context.Context, title, body string, files []*multipart.FileHeader) (*model.Post, error) {
+func (s *PostService) Create(ctx context.Context, title, body string, authorID, categoryID *uint, banner *multipart.FileHeader, files []*multipart.FileHeader) (*model.Post, error) {
 	title = strings.TrimSpace(title)
 	if title == "" {
 		return nil, errors.New("title is required")
 	}
-	post := &model.Post{Title: title, Body: trim(body)}
+	post := &model.Post{Title: title, Body: trim(body), AuthorID: authorID, CategoryID: categoryID}
 	if err := s.postRepo.Create(ctx, post); err != nil {
 		return nil, err
 	}
 	maxBytes := int64(s.cfg.MaxFileMB * 1024 * 1024)
+	if banner != nil {
+		if path, err := upload.SaveSingleImage(banner, s.cfg.UploadDir, "banners", maxBytes); err == nil {
+			post.BannerPath = path
+			_ = s.postRepo.Update(ctx, post)
+		}
+	}
 	for _, f := range files {
 		m, _, err := upload.SaveFile(f, s.cfg.UploadDir, post.ID, maxBytes)
 		if err != nil {
@@ -48,17 +54,17 @@ func (s *PostService) GetByID(ctx context.Context, id uint) (*model.Post, error)
 	return s.postRepo.GetByID(ctx, id)
 }
 
-func (s *PostService) List(ctx context.Context, limit, offset int) ([]model.Post, error) {
+func (s *PostService) List(ctx context.Context, limit, offset int, categoryID *uint) ([]model.Post, error) {
 	if limit <= 0 || limit > 100 {
 		limit = 20
 	}
 	if offset < 0 {
 		offset = 0
 	}
-	return s.postRepo.List(ctx, limit, offset)
+	return s.postRepo.List(ctx, limit, offset, categoryID)
 }
 
-func (s *PostService) Update(ctx context.Context, id uint, title, body string, files []*multipart.FileHeader) (*model.Post, error) {
+func (s *PostService) Update(ctx context.Context, id uint, title, body string, authorID, categoryID *uint, banner *multipart.FileHeader, files []*multipart.FileHeader) (*model.Post, error) {
 	post, err := s.postRepo.GetByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -71,6 +77,18 @@ func (s *PostService) Update(ctx context.Context, id uint, title, body string, f
 	}
 	if body != "" {
 		post.Body = strings.TrimSpace(body)
+	}
+	if authorID != nil {
+		post.AuthorID = authorID
+	}
+	if categoryID != nil {
+		post.CategoryID = categoryID
+	}
+	if banner != nil {
+		maxBytes := int64(s.cfg.MaxFileMB * 1024 * 1024)
+		if path, err := upload.SaveSingleImage(banner, s.cfg.UploadDir, "banners", maxBytes); err == nil {
+			post.BannerPath = path
+		}
 	}
 	if err := s.postRepo.Update(ctx, post); err != nil {
 		return nil, err

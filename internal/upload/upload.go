@@ -58,3 +58,41 @@ func SaveFile(file *multipart.FileHeader, uploadDir string, postID uint, maxByte
 	relPath := "posts/" + fmt.Sprintf("%d", postID) + "/" + newName
 	return &model.Media{PostID: postID, Type: mediaType, Path: relPath, Filename: file.Filename}, relPath, nil
 }
+
+// SaveSingleImage saves one image under uploadDir/subDir (e.g. "banners", "avatars"). Returns relative path.
+func SaveSingleImage(file *multipart.FileHeader, uploadDir, subDir string, maxBytes int64) (string, error) {
+	if file == nil {
+		return "", fmt.Errorf("file header is nil")
+	}
+	if maxBytes <= 0 {
+		return "", fmt.Errorf("max file size must be positive")
+	}
+	ext := strings.ToLower(filepath.Ext(file.Filename))
+	if !allowedImages[ext] {
+		return "", fmt.Errorf("file type not allowed")
+	}
+	if file.Size > maxBytes {
+		return "", fmt.Errorf("file size exceeds maximum allowed")
+	}
+	dir := filepath.Join(uploadDir, subDir)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return "", err
+	}
+	newName := fmt.Sprintf("%d%s", time.Now().UnixNano(), ext)
+	dstPath := filepath.Join(dir, newName)
+	src, err := file.Open()
+	if err != nil {
+		return "", err
+	}
+	defer src.Close()
+	dst, err := os.Create(dstPath)
+	if err != nil {
+		return "", err
+	}
+	defer dst.Close()
+	if _, err := io.Copy(dst, src); err != nil {
+		_ = os.Remove(dstPath)
+		return "", err
+	}
+	return subDir + "/" + newName, nil
+}

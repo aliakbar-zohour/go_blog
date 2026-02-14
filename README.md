@@ -34,8 +34,8 @@ A REST API for a blog built with Go, PostgreSQL, and support for image and video
 | `cmd/api/main.go` | Application entry point; loads config, DB, services, starts HTTP server |
 | `internal/config` | Loads settings from environment and defaults |
 | `internal/database` | PostgreSQL connection and auto-migration |
-| `internal/model` | Post and Media domain models |
-| `internal/repository` | Data access layer (CRUD for posts and media) |
+| `internal/model` | Post, Media, Author, Category, Comment models |
+| `internal/repository` | Data access layer (CRUD for posts, media, authors, categories, comments) |
 | `internal/service` | Business logic and validation |
 | `internal/handler` | HTTP handlers for API routes |
 | `internal/router` | Route definitions and middleware wiring |
@@ -140,15 +140,46 @@ If you use file uploads and keep the default `UPLOAD_DIR=uploads`, ensure the di
 
 ## API endpoints
 
+### Posts
+
 | Method | Path | Description |
 |--------|------|-------------|
-| `GET` | `/api/posts` | List posts (query: `limit`, `offset`) |
-| `POST` | `/api/posts` | Create post (form: `title`, `body`, `files[]`) |
-| `GET` | `/api/posts/:id` | Get one post by ID |
-| `PUT` | `/api/posts/:id` | Update post (form: `title`, `body`, `files[]`; all optional) |
+| `GET` | `/api/posts` | List posts (query: `limit`, `offset`, `category_id` to filter by category) |
+| `POST` | `/api/posts` | Create post (form: `title`, `body`, `author_id`, `category_id`, `banner`, `files[]`) |
+| `GET` | `/api/posts/:id` | Get one post by ID (includes author and category) |
+| `PUT` | `/api/posts/:id` | Update post (form: `title`, `body`, `author_id`, `category_id`, `banner`, `files[]`; all optional) |
 | `DELETE` | `/api/posts/:id` | Delete post (soft delete) |
 
-- Uploaded files are served under **`/uploads/<path>`** (e.g. `/uploads/posts/1/xyz.jpg`).
+### Authors
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/api/authors` | List all authors |
+| `POST` | `/api/authors` | Create author (form: `name`, `avatar`) |
+| `GET` | `/api/authors/:id` | Get one author |
+| `PUT` | `/api/authors/:id` | Update author (form: `name`, `avatar`) |
+| `DELETE` | `/api/authors/:id` | Delete author |
+
+### Categories
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/api/categories` | List all categories |
+| `POST` | `/api/categories` | Create category (form: `name`) |
+| `GET` | `/api/categories/:id` | Get one category |
+| `PUT` | `/api/categories/:id` | Update category (form: `name`) |
+| `DELETE` | `/api/categories/:id` | Delete category |
+
+### Comments
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/api/posts/:postId/comments` | List comments for a post |
+| `POST` | `/api/posts/:postId/comments` | Create comment (form: `body`, `author_name`) |
+| `PUT` | `/api/comments/:id` | Update comment (form: `body`) |
+| `DELETE` | `/api/comments/:id` | Delete comment |
+
+- Uploaded files are served under **`/uploads/<path>`** (e.g. `/uploads/posts/1/xyz.jpg`, `/uploads/banners/...`, `/uploads/avatars/...`).
 - **Allowed image extensions:** jpg, jpeg, png, gif, webp  
 - **Allowed video extensions:** mp4, webm, mov  
 

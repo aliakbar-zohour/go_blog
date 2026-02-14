@@ -40,8 +40,14 @@ func (h *PostHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 	title := r.FormValue("title")
 	body := r.FormValue("body")
+	authorID := parseOptionalUint(r.FormValue("author_id"))
+	categoryID := parseOptionalUint(r.FormValue("category_id"))
+	var banner *multipart.FileHeader
+	if r.MultipartForm != nil && len(r.MultipartForm.File["banner"]) > 0 {
+		banner = r.MultipartForm.File["banner"][0]
+	}
 	files := r.MultipartForm.File["files"]
-	post, err := h.svc.Create(r.Context(), title, body, files)
+	post, err := h.svc.Create(r.Context(), title, body, authorID, categoryID, banner, files)
 	if err != nil {
 		response.BadRequest(w, err.Error())
 		return
@@ -92,7 +98,8 @@ func (h *PostHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 func (h *PostHandler) List(w http.ResponseWriter, r *http.Request) {
 	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
 	offset, _ := strconv.Atoi(r.URL.Query().Get("offset"))
-	posts, err := h.svc.List(r.Context(), limit, offset)
+	categoryID := parseOptionalUint(r.URL.Query().Get("category_id"))
+	posts, err := h.svc.List(r.Context(), limit, offset, categoryID)
 	if err != nil {
 		response.Internal(w, "failed to list posts")
 		return
@@ -123,6 +130,8 @@ func (h *PostHandler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var title, body string
+	var authorID, categoryID *uint
+	var banner *multipart.FileHeader
 	var files []*multipart.FileHeader
 	if strings.Contains(r.Header.Get("Content-Type"), "multipart/form-data") {
 		if err := r.ParseMultipartForm(32 << 20); err != nil {
@@ -131,15 +140,22 @@ func (h *PostHandler) Update(w http.ResponseWriter, r *http.Request) {
 		}
 		title = r.FormValue("title")
 		body = r.FormValue("body")
+		authorID = parseOptionalUint(r.FormValue("author_id"))
+		categoryID = parseOptionalUint(r.FormValue("category_id"))
 		if r.MultipartForm != nil {
+			if len(r.MultipartForm.File["banner"]) > 0 {
+				banner = r.MultipartForm.File["banner"][0]
+			}
 			files = r.MultipartForm.File["files"]
 		}
 	} else {
 		_ = r.ParseForm()
 		title = r.FormValue("title")
 		body = r.FormValue("body")
+		authorID = parseOptionalUint(r.FormValue("author_id"))
+		categoryID = parseOptionalUint(r.FormValue("category_id"))
 	}
-	post, err := h.svc.Update(r.Context(), uint(id), title, body, files)
+	post, err := h.svc.Update(r.Context(), uint(id), title, body, authorID, categoryID, banner, files)
 	if err != nil {
 		response.Internal(w, err.Error())
 		return
@@ -172,4 +188,17 @@ func (h *PostHandler) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	response.NoContent(w)
+}
+
+func parseOptionalUint(s string) *uint {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return nil
+	}
+	n, err := strconv.ParseUint(s, 10, 32)
+	if err != nil {
+		return nil
+	}
+	u := uint(n)
+	return &u
 }

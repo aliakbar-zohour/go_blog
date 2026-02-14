@@ -296,6 +296,43 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "model.Author": {
+            "type": "object",
+            "properties": {
+                "avatar_path": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.Category": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
         "model.Media": {
             "type": "object",
             "properties": {
@@ -333,8 +370,23 @@ const docTemplate = `{
         "model.Post": {
             "type": "object",
             "properties": {
+                "author": {
+                    "$ref": "#/definitions/model.Author"
+                },
+                "author_id": {
+                    "type": "integer"
+                },
+                "banner_path": {
+                    "type": "string"
+                },
                 "body": {
                     "type": "string"
+                },
+                "category": {
+                    "$ref": "#/definitions/model.Category"
+                },
+                "category_id": {
+                    "type": "integer"
                 },
                 "created_at": {
                     "type": "string"
