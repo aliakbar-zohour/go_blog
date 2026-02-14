@@ -24,6 +24,20 @@ docker compose up --build
 
 API روی `http://localhost:8080` در دسترس است.
 
+## تست API با Swagger UI
+
+پس از اجرای سرور، محیط تست و مستندات API از آدرس زیر در دسترس است:
+
+- **Swagger UI:** [http://localhost:8080/docs/index.html](http://localhost:8080/docs/index.html)
+
+از همین صفحه می‌توانید هر endpoint را امتحان کنید؛ در صورت خطا، پاسخ خطا (و فیلد `error`) در همان صفحه نمایش داده می‌شود.
+
+برای به‌روزرسانی مستندات بعد از تغییر کامنت‌های Swagger:
+
+```bash
+go run github.com/swaggo/swag/cmd/swag@latest init -g cmd/api/main.go -d . -o docs
+```
+
 ## اجرای محلی
 
 1. PostgreSQL را اجرا کنید.

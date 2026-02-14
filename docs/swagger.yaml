@@ -1,0 +1,235 @@
+basePath: /api
+definitions:
+  model.Media:
+    properties:
+      created_at:
+        type: string
+      filename:
+        type: string
+      id:
+        type: integer
+      path:
+        type: string
+      post_id:
+        type: integer
+      type:
+        $ref: '#/definitions/model.MediaType'
+    type: object
+  model.MediaType:
+    enum:
+    - image
+    - video
+    type: string
+    x-enum-varnames:
+    - MediaTypeImage
+    - MediaTypeVideo
+  model.Post:
+    properties:
+      body:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: integer
+      media:
+        items:
+          $ref: '#/definitions/model.Media'
+        type: array
+      title:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  response.Body:
+    properties:
+      data: {}
+      error:
+        type: string
+      success:
+        type: boolean
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: REST API بلاگ با قابلیت CRUD پست و آپلود تصویر/ویدئو. خطاها در پاسخ
+    با فیلد error برمی‌گردند.
+  title: Go Blog API
+  version: "1.0"
+paths:
+  /posts:
+    get:
+      description: لیست پست‌ها با صفحه‌بندی (limit و offset).
+      parameters:
+      - description: تعداد در هر صفحه (پیش‌فرض 20)
+        in: query
+        name: limit
+        type: integer
+      - description: تعداد رد شده از ابتدا
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Body'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/model.Post'
+                  type: array
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Body'
+      summary: لیست پست‌ها
+      tags:
+      - posts
+    post:
+      consumes:
+      - multipart/form-data
+      description: پست جدید با عنوان و متن و اختیاری فایل (عکس/ویدئو) ایجاد می‌کند.
+      parameters:
+      - description: عنوان پست
+        in: formData
+        name: title
+        required: true
+        type: string
+      - description: متن پست
+        in: formData
+        name: body
+        type: string
+      - description: فایل‌های تصویر یا ویدئو
+        in: formData
+        name: files
+        type: file
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Body'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.Post'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Body'
+      summary: ساخت پست
+      tags:
+      - posts
+  /posts/{id}:
+    delete:
+      description: پست با شناسه مشخص حذف می‌شود (soft delete).
+      parameters:
+      - description: شناسه پست
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: No content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Body'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Body'
+      summary: حذف پست
+      tags:
+      - posts
+    get:
+      description: پست با شناسه مشخص را برمی‌گرداند.
+      parameters:
+      - description: شناسه پست
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Body'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.Post'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Body'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Body'
+      summary: دریافت یک پست
+      tags:
+      - posts
+    put:
+      consumes:
+      - multipart/form-data
+      description: پست را به‌روزرسانی می‌کند؛ فیلدهای خالی تغییر نمی‌کنند. فایل‌های
+        جدید اختیاری.
+      parameters:
+      - description: شناسه پست
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: عنوان جدید
+        in: formData
+        name: title
+        type: string
+      - description: متن جدید
+        in: formData
+        name: body
+        type: string
+      - description: فایل‌های جدید
+        in: formData
+        name: files
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Body'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.Post'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Body'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Body'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Body'
+      summary: ویرایش پست
+      tags:
+      - posts
+schemes:
+- http
+swagger: "2.0"
