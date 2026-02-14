@@ -24,10 +24,15 @@ func NewPostService(postRepo *repository.PostRepository, mediaRepo *repository.M
 	return &PostService{postRepo: postRepo, mediaRepo: mediaRepo, cfg: cfg}
 }
 
+const maxTitleLen = 500
+
 func (s *PostService) Create(ctx context.Context, title, body string, authorID, categoryID *uint, banner *multipart.FileHeader, files []*multipart.FileHeader) (*model.Post, error) {
 	title = strings.TrimSpace(title)
 	if title == "" {
 		return nil, errors.New("title is required")
+	}
+	if len(title) > maxTitleLen {
+		return nil, errors.New("title too long")
 	}
 	post := &model.Post{Title: title, Body: trim(body), AuthorID: authorID, CategoryID: categoryID}
 	if err := s.postRepo.Create(ctx, post); err != nil {
@@ -73,7 +78,11 @@ func (s *PostService) Update(ctx context.Context, id uint, title, body string, a
 		return nil, err
 	}
 	if title != "" {
-		post.Title = strings.TrimSpace(title)
+		t := strings.TrimSpace(title)
+		if len(t) > maxTitleLen {
+			return nil, errors.New("title too long")
+		}
+		post.Title = t
 	}
 	if body != "" {
 		post.Body = strings.TrimSpace(body)

@@ -56,7 +56,11 @@ func SaveFile(file *multipart.FileHeader, uploadDir string, postID uint, maxByte
 		return nil, "", err
 	}
 	relPath := "posts/" + fmt.Sprintf("%d", postID) + "/" + newName
-	return &model.Media{PostID: postID, Type: mediaType, Path: relPath, Filename: file.Filename}, relPath, nil
+	safeName := filepath.Base(file.Filename)
+	if safeName == "" || safeName == "." {
+		safeName = newName
+	}
+	return &model.Media{PostID: postID, Type: mediaType, Path: relPath, Filename: safeName}, relPath, nil
 }
 
 // SaveSingleImage saves one image under uploadDir/subDir (e.g. "banners", "avatars"). Returns relative path.

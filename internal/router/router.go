@@ -3,6 +3,7 @@ package router
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/aliakbar-zohour/go_blog/internal/config"
 	"github.com/aliakbar-zohour/go_blog/internal/handler"
@@ -14,11 +15,14 @@ import (
 
 func New(postSvc *service.PostService, authorSvc *service.AuthorService, categorySvc *service.CategoryService, commentSvc *service.CommentService, authSvc *service.AuthService, cfg *config.Config) http.Handler {
 	r := chi.NewRouter()
-	r.Use(middleware.Recover, middleware.SecureHeaders, middleware.Log)
+	r.Use(middleware.Recover, middleware.SecureHeaders, middleware.CORS(cfg.CORSOrigins), middleware.Gzip, middleware.Log)
 	r.Get("/docs/*", httpSwagger.WrapHandler)
 	r.Handle("/uploads/*", http.StripPrefix("/uploads/", http.FileServer(http.Dir(cfg.UploadDir))))
 	r.Route("/api", func(r chi.Router) {
+		r.Use(middleware.MaxBytes(cfg.BodyLimitBytes))
+		authRateLimit := middleware.NewRateLimit(cfg.AuthRatePerMin, time.Minute)
 		r.Route("/auth", func(r chi.Router) {
+			r.Use(authRateLimit.Middleware)
 			authH := handler.NewAuthHandler(authSvc)
 			r.Post("/register/request", authH.RequestVerification)
 			r.Post("/register/verify", authH.VerifyAndRegister)

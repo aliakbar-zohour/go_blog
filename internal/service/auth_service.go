@@ -31,11 +31,36 @@ func NewAuthService(authorRepo *repository.AuthorRepository, evRepo *repository.
 	return &AuthService{authorRepo: authorRepo, evRepo: evRepo, cfg: cfg}
 }
 
+func isValidEmailFormat(s string) bool {
+	if len(s) < 5 {
+		return false
+	}
+	at := -1
+	for i, c := range s {
+		if c == '@' {
+			at = i
+			break
+		}
+	}
+	if at <= 0 || at >= len(s)-2 {
+		return false
+	}
+	for i := at + 1; i < len(s); i++ {
+		if s[i] == '.' {
+			return true
+		}
+	}
+	return false
+}
+
 // RequestVerification sends a 6-digit code to the email. Returns the code when SMTP is not configured (for dev/testing so you can use it in Swagger).
 func (s *AuthService) RequestVerification(ctx context.Context, email string) (devCode string, err error) {
 	email = normalizeEmail(email)
 	if email == "" {
 		return "", errors.New("email is required")
+	}
+	if !isValidEmailFormat(email) {
+		return "", errors.New("invalid email format")
 	}
 	code, err := generateCode(codeLength)
 	if err != nil {
@@ -64,6 +89,9 @@ func (s *AuthService) VerifyAndRegister(ctx context.Context, email, code, name, 
 	name = strings.TrimSpace(name)
 	if email == "" || code == "" || name == "" || password == "" {
 		return nil, "", errors.New("email, code, name and password are required")
+	}
+	if !isValidEmailFormat(email) {
+		return nil, "", errors.New("invalid email format")
 	}
 	if len(password) < 8 {
 		return nil, "", errors.New("password must be at least 8 characters")
@@ -106,6 +134,9 @@ func (s *AuthService) Login(ctx context.Context, email, password string) (*model
 	email = normalizeEmail(email)
 	if email == "" || password == "" {
 		return nil, "", errors.New("email and password are required")
+	}
+	if !isValidEmailFormat(email) {
+		return nil, "", errors.New("invalid email format")
 	}
 	a, err := s.authorRepo.GetByEmail(ctx, email)
 	if err != nil {

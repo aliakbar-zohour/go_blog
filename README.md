@@ -153,6 +153,21 @@ Server: **http://localhost:8080**. Create an `uploads` directory if you use file
 | `SMTP_USER` | (empty) | SMTP username |
 | `SMTP_PASS` | (empty) | SMTP password |
 | `SMTP_FROM` | `noreply@go-blog.local` | From address for emails |
+| `CORS_ORIGINS` | `*` | Comma-separated allowed origins (e.g. `https://app.example.com`) |
+| `BODY_LIMIT_BYTES` | `33554432` (32MB) | Max request body size; 413 if exceeded |
+| `AUTH_RATE_PER_MIN` | `10` | Max auth requests per IP per minute (login/register) |
+
+---
+
+## Security & performance
+
+- **Rate limiting** – Auth endpoints (`/api/auth/*`) are limited per IP to reduce brute-force and abuse.
+- **Body limit** – Request body size is capped; oversized requests get 413.
+- **CORS** – Configure `CORS_ORIGINS` in production to allow only your front-end origin(s).
+- **Headers** – `X-Content-Type-Options`, `X-Frame-Options`, `X-XSS-Protection`, `Referrer-Policy` are set.
+- **DB pool** – Connection pool (max open 25, idle 5) and prepared statements for faster queries.
+- **Gzip** – JSON responses are compressed when the client sends `Accept-Encoding: gzip`.
+- **Input validation** – Email format, field lengths (title, category name, comment body), and file type/size are validated.
 
 ---
 

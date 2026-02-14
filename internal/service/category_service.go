@@ -19,10 +19,15 @@ func NewCategoryService(repo *repository.CategoryRepository) *CategoryService {
 	return &CategoryService{repo: repo}
 }
 
+const maxCategoryNameLen = 200
+
 func (s *CategoryService) Create(ctx context.Context, name string) (*model.Category, error) {
 	name = strings.TrimSpace(name)
 	if name == "" {
 		return nil, errors.New("name is required")
+	}
+	if len(name) > maxCategoryNameLen {
+		return nil, errors.New("name too long")
 	}
 	c := &model.Category{Name: name}
 	if err := s.repo.Create(ctx, c); err != nil {
@@ -48,7 +53,11 @@ func (s *CategoryService) Update(ctx context.Context, id uint, name string) (*mo
 		return nil, err
 	}
 	if name != "" {
-		c.Name = strings.TrimSpace(name)
+		n := strings.TrimSpace(name)
+		if len(n) > maxCategoryNameLen {
+			return nil, errors.New("name too long")
+		}
+		c.Name = n
 	}
 	if err := s.repo.Update(ctx, c); err != nil {
 		return nil, err

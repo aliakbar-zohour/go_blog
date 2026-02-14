@@ -25,10 +25,15 @@ func NewCommentService(repo *repository.CommentRepository, postRepo *repository.
 	return &CommentService{repo: repo, postRepo: postRepo}
 }
 
+const maxCommentBodyLen = 2000
+
 func (s *CommentService) Create(ctx context.Context, postID uint, body, authorName string, authorID *uint) (*model.Comment, error) {
 	body = strings.TrimSpace(body)
 	if body == "" {
 		return nil, errors.New("body is required")
+	}
+	if len(body) > maxCommentBodyLen {
+		return nil, errors.New("comment body too long")
 	}
 	if _, err := s.postRepo.GetByID(ctx, postID); err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -63,7 +68,11 @@ func (s *CommentService) Update(ctx context.Context, id uint, body string, autho
 		return nil, ErrCommentForbidden
 	}
 	if body != "" {
-		c.Body = strings.TrimSpace(body)
+		b := strings.TrimSpace(body)
+		if len(b) > maxCommentBodyLen {
+			return nil, errors.New("comment body too long")
+		}
+		c.Body = b
 	}
 	if err := s.repo.Update(ctx, c); err != nil {
 		return nil, err

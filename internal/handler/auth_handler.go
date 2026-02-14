@@ -48,13 +48,13 @@ func NewAuthHandler(svc *service.AuthService) *AuthHandler {
 //	@Failure		400		{object}	response.Body
 //	@Router			/auth/register/request [post]
 func (h *AuthHandler) RequestVerification(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		response.BadRequest(w, "method not allowed")
-		return
-	}
 	var body AuthRegisterRequest
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		response.BadRequest(w, "invalid body")
+		return
+	}
+	if len(body.Email) > 255 {
+		response.BadRequest(w, "email too long")
 		return
 	}
 	devCode, err := h.svc.RequestVerification(r.Context(), body.Email)
@@ -82,13 +82,13 @@ func (h *AuthHandler) RequestVerification(w http.ResponseWriter, r *http.Request
 //	@Failure		400		{object}	response.Body
 //	@Router			/auth/register/verify [post]
 func (h *AuthHandler) VerifyAndRegister(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		response.BadRequest(w, "method not allowed")
-		return
-	}
 	var body AuthRegisterVerifyRequest
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		response.BadRequest(w, "invalid body")
+		return
+	}
+	if len(body.Email) > 255 || len(body.Name) > 255 || len(body.Code) > 10 || len(body.Password) > 128 {
+		response.BadRequest(w, "field too long")
 		return
 	}
 	a, token, err := h.svc.VerifyAndRegister(r.Context(), body.Email, body.Code, body.Name, body.Password)
@@ -112,13 +112,13 @@ func (h *AuthHandler) VerifyAndRegister(w http.ResponseWriter, r *http.Request) 
 //	@Failure		400		{object}	response.Body
 //	@Router			/auth/login [post]
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		response.BadRequest(w, "method not allowed")
-		return
-	}
 	var body AuthLoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		response.BadRequest(w, "invalid body")
+		return
+	}
+	if len(body.Email) > 255 || len(body.Password) > 128 {
+		response.BadRequest(w, "field too long")
 		return
 	}
 	a, token, err := h.svc.Login(r.Context(), body.Email, body.Password)

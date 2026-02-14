@@ -2,27 +2,39 @@
 package config
 
 import (
+	"log"
 	"os"
 	"strconv"
 )
 
+const (
+	DefaultJWTSecret = "change-me-in-production"
+	DefaultBodyLimit = 32 << 20  // 32MB max request body (multipart posts)
+	DefaultAuthRate  = 10        // requests per minute per IP for auth
+	DefaultListLimit = 20
+	MaxListLimit     = 100
+)
+
 type Config struct {
-	ServerPort    string
-	DBHost        string
-	DBPort        string
-	DBUser        string
-	DBPass        string
-	DBName        string
-	DBSSL         string
-	UploadDir     string
-	MaxFileMB     int
-	JWTSecret     string
-	JWTExpiryHours int
-	SMTPHost      string
-	SMTPPort      string
-	SMTPUser      string
-	SMTPPass      string
-	SMTPFrom      string
+	ServerPort      string
+	DBHost          string
+	DBPort          string
+	DBUser          string
+	DBPass          string
+	DBName          string
+	DBSSL           string
+	UploadDir       string
+	MaxFileMB       int
+	JWTSecret       string
+	JWTExpiryHours  int
+	CORSOrigins     string
+	BodyLimitBytes  int64
+	AuthRatePerMin  int
+	SMTPHost        string
+	SMTPPort        string
+	SMTPUser        string
+	SMTPPass        string
+	SMTPFrom        string
 }
 
 func Load() *Config {
@@ -34,6 +46,18 @@ func Load() *Config {
 	if jwtHours <= 0 {
 		jwtHours = 72
 	}
+	bodyLimit := int64(DefaultBodyLimit)
+	if b, _ := strconv.ParseInt(getEnv("BODY_LIMIT_BYTES", ""), 10, 64); b > 0 {
+		bodyLimit = b
+	}
+	authRate, _ := strconv.Atoi(getEnv("AUTH_RATE_PER_MIN", "10"))
+	if authRate <= 0 {
+		authRate = DefaultAuthRate
+	}
+	jwtSecret := getEnv("JWT_SECRET", DefaultJWTSecret)
+	if jwtSecret == DefaultJWTSecret {
+		log.Printf("warning: JWT_SECRET is default; set a strong secret in production")
+	}
 	return &Config{
 		ServerPort:     getEnv("PORT", "8080"),
 		DBHost:         getEnv("DB_HOST", "localhost"),
@@ -44,8 +68,11 @@ func Load() *Config {
 		DBSSL:          getEnv("DB_SSLMODE", "disable"),
 		UploadDir:      getEnv("UPLOAD_DIR", "uploads"),
 		MaxFileMB:      maxMB,
-		JWTSecret:      getEnv("JWT_SECRET", "change-me-in-production"),
+		JWTSecret:      jwtSecret,
 		JWTExpiryHours: jwtHours,
+		CORSOrigins:    getEnv("CORS_ORIGINS", "*"),
+		BodyLimitBytes: bodyLimit,
+		AuthRatePerMin: authRate,
 		SMTPHost:       getEnv("SMTP_HOST", ""),
 		SMTPPort:       getEnv("SMTP_PORT", "587"),
 		SMTPUser:       getEnv("SMTP_USER", ""),

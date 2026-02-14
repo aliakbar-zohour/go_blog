@@ -49,7 +49,7 @@ func (h *PostHandler) Create(w http.ResponseWriter, r *http.Request) {
 	categoryID := parseOptionalUint(r.FormValue("category_id"))
 	authorID := middleware.GetAuthorID(r.Context())
 	if authorID == 0 {
-			response.Unauthorized(w, "authorization required to create a post")
+		response.Unauthorized(w, "authorization required to create a post")
 		return
 	}
 	var banner *multipart.FileHeader
