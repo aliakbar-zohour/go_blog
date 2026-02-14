@@ -1,9 +1,11 @@
-// handler/post_handler: هندلرهای HTTP برای CRUD پست و آپلود فایل.
+// handler/post_handler: HTTP handlers for post CRUD and file upload.
 package handler
 
 import (
+	"mime/multipart"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/aliakbar-zohour/go_blog/internal/service"
 	"github.com/aliakbar-zohour/go_blog/pkg/response"
@@ -19,20 +21,21 @@ func NewPostHandler(svc *service.PostService) *PostHandler {
 }
 
 // Create godoc
-//	@Summary		ساخت پست
-//	@Description	پست جدید با عنوان و متن و اختیاری فایل (عکس/ویدئو) ایجاد می‌کند.
+//
+//	@Summary		Create a post
+//	@Description	Creates a new post with title, body, and optional image/video files.
 //	@Tags			posts
 //	@Accept			multipart/form-data
 //	@Produce		json
-//	@Param			title	formData	string	true	"عنوان پست"
-//	@Param			body	formData	string	false	"متن پست"
-//	@Param			files	formData	file	false	"فایل‌های تصویر یا ویدئو"
+//	@Param			title	formData	string	true	"Post title"
+//	@Param			body	formData	string	false	"Post body"
+//	@Param			files	formData	file	false	"Image or video files"
 //	@Success		201		{object}	response.Body{data=model.Post}
 //	@Failure		400		{object}	response.Body
 //	@Router			/posts [post]
 func (h *PostHandler) Create(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseMultipartForm(32 << 20); err != nil {
-		response.BadRequest(w, "فرمت درخواست نامعتبر")
+		response.BadRequest(w, "invalid request format")
 		return
 	}
 	title := r.FormValue("title")
@@ -47,11 +50,12 @@ func (h *PostHandler) Create(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetByID godoc
-//	@Summary		دریافت یک پست
-//	@Description	پست با شناسه مشخص را برمی‌گرداند.
+//
+//	@Summary		Get a post by ID
+//	@Description	Returns the post with the given ID.
 //	@Tags			posts
 //	@Produce		json
-//	@Param			id	path		int	true	"شناسه پست"
+//	@Param			id	path		int	true	"Post ID"
 //	@Success		200	{object}	response.Body{data=model.Post}
 //	@Failure		400	{object}	response.Body
 //	@Failure		404	{object}	response.Body
@@ -59,28 +63,29 @@ func (h *PostHandler) Create(w http.ResponseWriter, r *http.Request) {
 func (h *PostHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseUint(chi.URLParam(r, "id"), 10, 32)
 	if err != nil {
-		response.BadRequest(w, "شناسه نامعتبر")
+		response.BadRequest(w, "invalid id")
 		return
 	}
 	post, err := h.svc.GetByID(r.Context(), uint(id))
 	if err != nil {
-		response.NotFound(w, "پست یافت نشد")
+		response.NotFound(w, "post not found")
 		return
 	}
 	if post == nil {
-		response.NotFound(w, "پست یافت نشد")
+		response.NotFound(w, "post not found")
 		return
 	}
 	response.OK(w, post)
 }
 
 // List godoc
-//	@Summary		لیست پست‌ها
-//	@Description	لیست پست‌ها با صفحه‌بندی (limit و offset).
+//
+//	@Summary		List posts
+//	@Description	Returns a paginated list of posts (limit and offset).
 //	@Tags			posts
 //	@Produce		json
-//	@Param			limit	query		int	false	"تعداد در هر صفحه (پیش‌فرض 20)"
-//	@Param			offset	query		int	false	"تعداد رد شده از ابتدا"
+//	@Param			limit	query		int	false	"Items per page (default 20)"
+//	@Param			offset	query		int	false	"Number of items to skip"
 //	@Success		200		{object}	response.Body{data=[]model.Post}
 //	@Failure		500		{object}	response.Body
 //	@Router			/posts [get]
@@ -89,22 +94,23 @@ func (h *PostHandler) List(w http.ResponseWriter, r *http.Request) {
 	offset, _ := strconv.Atoi(r.URL.Query().Get("offset"))
 	posts, err := h.svc.List(r.Context(), limit, offset)
 	if err != nil {
-		response.Internal(w, "خطا در دریافت لیست")
+		response.Internal(w, "failed to list posts")
 		return
 	}
 	response.OK(w, posts)
 }
 
 // Update godoc
-//	@Summary		ویرایش پست
-//	@Description	پست را به‌روزرسانی می‌کند؛ فیلدهای خالی تغییر نمی‌کنند. فایل‌های جدید اختیاری.
+//
+//	@Summary		Update a post
+//	@Description	Updates a post. Empty fields are left unchanged. New files are optional.
 //	@Tags			posts
 //	@Accept			multipart/form-data
 //	@Produce		json
-//	@Param			id		path		int		true	"شناسه پست"
-//	@Param			title	formData	string	false	"عنوان جدید"
-//	@Param			body	formData	string	false	"متن جدید"
-//	@Param			files	formData	file	false	"فایل‌های جدید"
+//	@Param			id		path		int		true	"Post ID"
+//	@Param			title	formData	string	false	"New title"
+//	@Param			body	formData	string	false	"New body"
+//	@Param			files	formData	file	false	"New files"
 //	@Success		200		{object}	response.Body{data=model.Post}
 //	@Failure		400		{object}	response.Body
 //	@Failure		404		{object}	response.Body
@@ -113,33 +119,44 @@ func (h *PostHandler) List(w http.ResponseWriter, r *http.Request) {
 func (h *PostHandler) Update(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseUint(chi.URLParam(r, "id"), 10, 32)
 	if err != nil {
-		response.BadRequest(w, "شناسه نامعتبر")
+		response.BadRequest(w, "invalid id")
 		return
 	}
-	if err := r.ParseMultipartForm(32 << 20); err != nil {
-		response.BadRequest(w, "فرمت درخواست نامعتبر")
-		return
+	var title, body string
+	var files []*multipart.FileHeader
+	if strings.Contains(r.Header.Get("Content-Type"), "multipart/form-data") {
+		if err := r.ParseMultipartForm(32 << 20); err != nil {
+			response.BadRequest(w, "invalid request format")
+			return
+		}
+		title = r.FormValue("title")
+		body = r.FormValue("body")
+		if r.MultipartForm != nil {
+			files = r.MultipartForm.File["files"]
+		}
+	} else {
+		_ = r.ParseForm()
+		title = r.FormValue("title")
+		body = r.FormValue("body")
 	}
-	title := r.FormValue("title")
-	body := r.FormValue("body")
-	files := r.MultipartForm.File["files"]
 	post, err := h.svc.Update(r.Context(), uint(id), title, body, files)
 	if err != nil {
 		response.Internal(w, err.Error())
 		return
 	}
 	if post == nil {
-		response.NotFound(w, "پست یافت نشد")
+		response.NotFound(w, "post not found")
 		return
 	}
 	response.OK(w, post)
 }
 
 // Delete godoc
-//	@Summary		حذف پست
-//	@Description	پست با شناسه مشخص حذف می‌شود (soft delete).
+//
+//	@Summary		Delete a post
+//	@Description	Deletes the post with the given ID (soft delete).
 //	@Tags			posts
-//	@Param			id	path	int	true	"شناسه پست"
+//	@Param			id	path	int	true	"Post ID"
 //	@Success		204	"No content"
 //	@Failure		400	{object}	response.Body
 //	@Failure		500	{object}	response.Body
@@ -147,11 +164,11 @@ func (h *PostHandler) Update(w http.ResponseWriter, r *http.Request) {
 func (h *PostHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseUint(chi.URLParam(r, "id"), 10, 32)
 	if err != nil {
-		response.BadRequest(w, "شناسه نامعتبر")
+		response.BadRequest(w, "invalid id")
 		return
 	}
 	if err := h.svc.Delete(r.Context(), uint(id)); err != nil {
-		response.Internal(w, "خطا در حذف")
+		response.Internal(w, "failed to delete post")
 		return
 	}
 	response.NoContent(w)

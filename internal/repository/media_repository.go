@@ -1,4 +1,4 @@
-// repository/media_repository: ذخیره و حذف رکورد مدیا در دیتابیس.
+// repository/media_repository: Create and delete media records in the database.
 package repository
 
 import (

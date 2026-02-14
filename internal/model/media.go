@@ -1,4 +1,4 @@
-// model/media: مدل فایل‌های آپلودشده (عکس/ویدیو) برای هر پست.
+// model/media: Uploaded file (image/video) model for each post.
 package model
 
 import (

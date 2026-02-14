@@ -1,4 +1,4 @@
-// repository/post_repository: لایه دسترسی به داده‌های پست (CRUD).
+// repository/post_repository: Data access layer for posts (CRUD).
 package repository
 
 import (

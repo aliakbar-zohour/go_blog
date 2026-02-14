@@ -1,4 +1,4 @@
-// config: بارگذاری تنظیمات از env و مقادیر پیش‌فرض.
+// config: Loads settings from environment variables and default values.
 package config
 
 import (
@@ -20,6 +20,9 @@ type Config struct {
 
 func Load() *Config {
 	maxMB, _ := strconv.Atoi(getEnv("MAX_UPLOAD_MB", "50"))
+	if maxMB <= 0 {
+		maxMB = 50
+	}
 	return &Config{
 		ServerPort: getEnv("PORT", "8080"),
 		DBHost:     getEnv("DB_HOST", "localhost"),

@@ -1,4 +1,4 @@
-// pkg/response: فرمت یکسان پاسخ JSON برای API.
+// pkg/response: Consistent JSON response format for the API.
 package response
 
 import (

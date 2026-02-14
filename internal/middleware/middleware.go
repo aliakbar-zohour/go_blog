@@ -1,4 +1,4 @@
-// middleware: لاگ درخواست، بازیابی پنیک و هدرهای امنیتی.
+// middleware: Request logging, panic recovery, and security headers.
 package middleware
 
 import (
@@ -13,7 +13,7 @@ func Recover(next http.Handler) http.Handler {
 				log.Printf("panic: %v", err)
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusInternalServerError)
-				_, _ = w.Write([]byte(`{"success":false,"error":"خطای داخلی"}`))
+				_, _ = w.Write([]byte(`{"success":false,"error":"internal server error"}`))
 			}
 		}()
 		next.ServeHTTP(w, r)

@@ -1,4 +1,4 @@
-// router: تعریف مسیرهای API و اتصال هندلرها و میدلورها.
+// router: API route definitions and handler/middleware wiring.
 package router
 
 import (

@@ -1,4 +1,4 @@
-// upload: اعتبارسنجی و ذخیرهٔ امن فایل‌های تصویر و ویدئو.
+// upload: Validates and safely stores image and video uploads.
 package upload
 
 import (
@@ -19,15 +19,21 @@ var (
 )
 
 func SaveFile(file *multipart.FileHeader, uploadDir string, postID uint, maxBytes int64) (*model.Media, string, error) {
+	if file == nil {
+		return nil, "", fmt.Errorf("file header is nil")
+	}
+	if maxBytes <= 0 {
+		return nil, "", fmt.Errorf("max file size must be positive")
+	}
 	ext := strings.ToLower(filepath.Ext(file.Filename))
 	mediaType := model.MediaTypeImage
 	if allowedVideos[ext] {
 		mediaType = model.MediaTypeVideo
 	} else if !allowedImages[ext] {
-		return nil, "", fmt.Errorf("نوع فایل مجاز نیست")
+		return nil, "", fmt.Errorf("file type not allowed")
 	}
 	if file.Size > maxBytes {
-		return nil, "", fmt.Errorf("حجم فایل بیش از حد مجاز است")
+		return nil, "", fmt.Errorf("file size exceeds maximum allowed")
 	}
 	dir := filepath.Join(uploadDir, "posts", fmt.Sprintf("%d", postID))
 	if err := os.MkdirAll(dir, 0755); err != nil {
@@ -49,6 +55,6 @@ func SaveFile(file *multipart.FileHeader, uploadDir string, postID uint, maxByte
 		_ = os.Remove(dstPath)
 		return nil, "", err
 	}
-	relPath := filepath.Join("posts", fmt.Sprintf("%d", postID), newName)
+	relPath := "posts/" + fmt.Sprintf("%d", postID) + "/" + newName
 	return &model.Media{PostID: postID, Type: mediaType, Path: relPath, Filename: file.Filename}, relPath, nil
 }

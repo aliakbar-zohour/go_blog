@@ -17,24 +17,24 @@ const docTemplate = `{
     "paths": {
         "/posts": {
             "get": {
-                "description": "لیست پست‌ها با صفحه‌بندی (limit و offset).",
+                "description": "Returns a paginated list of posts (limit and offset).",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "posts"
                 ],
-                "summary": "لیست پست‌ها",
+                "summary": "List posts",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "تعداد در هر صفحه (پیش‌فرض 20)",
+                        "description": "Items per page (default 20)",
                         "name": "limit",
                         "in": "query"
                     },
                     {
                         "type": "integer",
-                        "description": "تعداد رد شده از ابتدا",
+                        "description": "Number of items to skip",
                         "name": "offset",
                         "in": "query"
                     }
@@ -70,7 +70,7 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "description": "پست جدید با عنوان و متن و اختیاری فایل (عکس/ویدئو) ایجاد می‌کند.",
+                "description": "Creates a new post with title, body, and optional image/video files.",
                 "consumes": [
                     "multipart/form-data"
                 ],
@@ -80,24 +80,24 @@ const docTemplate = `{
                 "tags": [
                     "posts"
                 ],
-                "summary": "ساخت پست",
+                "summary": "Create a post",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "عنوان پست",
+                        "description": "Post title",
                         "name": "title",
                         "in": "formData",
                         "required": true
                     },
                     {
                         "type": "string",
-                        "description": "متن پست",
+                        "description": "Post body",
                         "name": "body",
                         "in": "formData"
                     },
                     {
                         "type": "file",
-                        "description": "فایل‌های تصویر یا ویدئو",
+                        "description": "Image or video files",
                         "name": "files",
                         "in": "formData"
                     }
@@ -132,18 +132,18 @@ const docTemplate = `{
         },
         "/posts/{id}": {
             "get": {
-                "description": "پست با شناسه مشخص را برمی‌گرداند.",
+                "description": "Returns the post with the given ID.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "posts"
                 ],
-                "summary": "دریافت یک پست",
+                "summary": "Get a post by ID",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "شناسه پست",
+                        "description": "Post ID",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -183,7 +183,7 @@ const docTemplate = `{
                 }
             },
             "put": {
-                "description": "پست را به‌روزرسانی می‌کند؛ فیلدهای خالی تغییر نمی‌کنند. فایل‌های جدید اختیاری.",
+                "description": "Updates a post. Empty fields are left unchanged. New files are optional.",
                 "consumes": [
                     "multipart/form-data"
                 ],
@@ -193,30 +193,30 @@ const docTemplate = `{
                 "tags": [
                     "posts"
                 ],
-                "summary": "ویرایش پست",
+                "summary": "Update a post",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "شناسه پست",
+                        "description": "Post ID",
                         "name": "id",
                         "in": "path",
                         "required": true
                     },
                     {
                         "type": "string",
-                        "description": "عنوان جدید",
+                        "description": "New title",
                         "name": "title",
                         "in": "formData"
                     },
                     {
                         "type": "string",
-                        "description": "متن جدید",
+                        "description": "New body",
                         "name": "body",
                         "in": "formData"
                     },
                     {
                         "type": "file",
-                        "description": "فایل‌های جدید",
+                        "description": "New files",
                         "name": "files",
                         "in": "formData"
                     }
@@ -261,15 +261,15 @@ const docTemplate = `{
                 }
             },
             "delete": {
-                "description": "پست با شناسه مشخص حذف می‌شود (soft delete).",
+                "description": "Deletes the post with the given ID (soft delete).",
                 "tags": [
                     "posts"
                 ],
-                "summary": "حذف پست",
+                "summary": "Delete a post",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "شناسه پست",
+                        "description": "Post ID",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -378,7 +378,7 @@ var SwaggerInfo = &swag.Spec{
 	BasePath:         "/api",
 	Schemes:          []string{"http"},
 	Title:            "Go Blog API",
-	Description:      "REST API بلاگ با قابلیت CRUD پست و آپلود تصویر/ویدئو. خطاها در پاسخ با فیلد error برمی\u200cگردند.",
+	Description:      "REST API for a blog with CRUD posts and image/video upload. Errors are returned in the response body with an \"error\" field.",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

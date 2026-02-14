@@ -1,4 +1,4 @@
-// model/post: مدل دامنه پست و رابطه با مدیا.
+// model/post: Post domain model and relation to media.
 package model
 
 import (

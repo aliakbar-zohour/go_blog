@@ -1,4 +1,4 @@
-// service/post_service: منطق کسب‌وکار پست و مدیا (اعتبارسنجی، هماهنگی).
+// service/post_service: Business logic for posts and media (validation, orchestration).
 package service
 
 import (
@@ -27,7 +27,7 @@ func NewPostService(postRepo *repository.PostRepository, mediaRepo *repository.M
 func (s *PostService) Create(ctx context.Context, title, body string, files []*multipart.FileHeader) (*model.Post, error) {
 	title = strings.TrimSpace(title)
 	if title == "" {
-		return nil, errors.New("عنوان الزامی است")
+		return nil, errors.New("title is required")
 	}
 	post := &model.Post{Title: title, Body: trim(body)}
 	if err := s.postRepo.Create(ctx, post); err != nil {

@@ -1,4 +1,4 @@
-// database: اتصال به PostgreSQL و اجرای مایگریشن مدل‌ها.
+// database: PostgreSQL connection and auto-migration of models.
 package database
 
 import (

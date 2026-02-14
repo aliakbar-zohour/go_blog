@@ -1,69 +1,206 @@
 # Go Blog API
 
-بلاگ REST API با Go، دیتابیس PostgreSQL و پشتیبانی از آپلود تصویر و ویدئو.
+A REST API for a blog built with Go, PostgreSQL, and support for image and video uploads.
 
-## ساختار پروژه
+---
 
-- `cmd/api` — نقطه ورود برنامه
-- `internal/config` — تنظیمات از env
-- `internal/database` — اتصال و مایگریشن
-- `internal/model` — مدل‌های پست و مدیا
-- `internal/repository` — لایه دسترسی به داده
-- `internal/service` — منطق کسب‌وکار
-- `internal/handler` — هندلرهای HTTP
-- `internal/router` — مسیرها و میدلور
-- `internal/middleware` — بازیابی پنیک، هدر امن، لاگ
-- `internal/upload` — اعتبارسنجی و ذخیره فایل
-- `pkg/response` — پاسخ JSON یکسان
+## Table of contents
 
-## اجرا با Docker
+- [Requirements](#requirements)
+- [Project structure](#project-structure)
+- [Quick start with Docker](#quick-start-with-docker)
+- [Local development (without Docker)](#local-development-without-docker)
+- [Environment variables](#environment-variables)
+- [API endpoints](#api-endpoints)
+- [Testing with Swagger UI](#testing-with-swagger-ui)
+- [Regenerating Swagger docs](#regenerating-swagger-docs)
+- [Building and running the binary](#building-and-running-the-binary)
+- [License](#license)
+
+---
+
+## Requirements
+
+- **Go 1.21+** (for local run and building)
+- **Docker and Docker Compose** (optional; for running app + PostgreSQL in containers)
+- **PostgreSQL 14+** (if running locally without Docker)
+
+---
+
+## Project structure
+
+| Path | Description |
+|------|-------------|
+| `cmd/api/main.go` | Application entry point; loads config, DB, services, starts HTTP server |
+| `internal/config` | Loads settings from environment and defaults |
+| `internal/database` | PostgreSQL connection and auto-migration |
+| `internal/model` | Post and Media domain models |
+| `internal/repository` | Data access layer (CRUD for posts and media) |
+| `internal/service` | Business logic and validation |
+| `internal/handler` | HTTP handlers for API routes |
+| `internal/router` | Route definitions and middleware wiring |
+| `internal/middleware` | Panic recovery, security headers, request logging |
+| `internal/upload` | File type/size validation and safe storage |
+| `pkg/response` | Shared JSON response helpers |
+| `docs/` | Generated Swagger/OpenAPI docs (do not edit by hand) |
+
+---
+
+## Quick start with Docker
+
+This is the simplest way to run the API and database together.
+
+### 1. Clone and enter the project
+
+```bash
+git clone https://github.com/aliakbar-zohour/go_blog.git
+cd go_blog
+```
+
+### 2. Build and start services
 
 ```bash
 docker compose up --build
 ```
 
-API روی `http://localhost:8080` در دسترس است.
+- **API** will be available at **http://localhost:8080**
+- **PostgreSQL** runs in a container; no local install needed.
+- Uploaded files are stored in a Docker volume.
 
-## تست API با Swagger UI
+### 3. Stop services
 
-پس از اجرای سرور، محیط تست و مستندات API از آدرس زیر در دسترس است:
+```bash
+docker compose down
+```
 
-- **Swagger UI:** [http://localhost:8080/docs/index.html](http://localhost:8080/docs/index.html)
+To also remove the database volume:
 
-از همین صفحه می‌توانید هر endpoint را امتحان کنید؛ در صورت خطا، پاسخ خطا (و فیلد `error`) در همان صفحه نمایش داده می‌شود.
+```bash
+docker compose down -v
+```
 
-برای به‌روزرسانی مستندات بعد از تغییر کامنت‌های Swagger:
+---
+
+## Local development (without Docker)
+
+Use this when you want to run the API on your machine and use a local (or remote) PostgreSQL instance.
+
+### 1. Install and run PostgreSQL
+
+- Install PostgreSQL 14+ and ensure it is running.
+- Create a database, for example: `createdb go_blog`
+
+### 2. Clone the project
+
+```bash
+git clone https://github.com/aliakbar-zohour/go_blog.git
+cd go_blog
+```
+
+### 3. Copy environment file and set variables
+
+```bash
+cp .env.example .env
+```
+
+Edit `.env` and set at least:
+
+- `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`
+
+### 4. Install dependencies and run the API
+
+```bash
+go mod download
+go run ./cmd/api
+```
+
+The server listens on **http://localhost:8080** (or the port set in `PORT`).
+
+### 5. (Optional) Create uploads directory
+
+If you use file uploads and keep the default `UPLOAD_DIR=uploads`, ensure the directory exists or the app will create it on first upload.
+
+---
+
+## Environment variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `PORT` | `8080` | HTTP server port |
+| `DB_HOST` | `localhost` | PostgreSQL host |
+| `DB_PORT` | `5432` | PostgreSQL port |
+| `DB_USER` | `postgres` | Database user |
+| `DB_PASSWORD` | `postgres` | Database password |
+| `DB_NAME` | `go_blog` | Database name |
+| `DB_SSLMODE` | `disable` | PostgreSQL SSL mode |
+| `UPLOAD_DIR` | `uploads` | Directory for uploaded files |
+| `MAX_UPLOAD_MB` | `50` | Max file size per upload (MB) |
+
+---
+
+## API endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/api/posts` | List posts (query: `limit`, `offset`) |
+| `POST` | `/api/posts` | Create post (form: `title`, `body`, `files[]`) |
+| `GET` | `/api/posts/:id` | Get one post by ID |
+| `PUT` | `/api/posts/:id` | Update post (form: `title`, `body`, `files[]`; all optional) |
+| `DELETE` | `/api/posts/:id` | Delete post (soft delete) |
+
+- Uploaded files are served under **`/uploads/<path>`** (e.g. `/uploads/posts/1/xyz.jpg`).
+- **Allowed image extensions:** jpg, jpeg, png, gif, webp  
+- **Allowed video extensions:** mp4, webm, mov  
+
+All JSON responses use a common shape: `{ "success": true|false, "data": ..., "error": "..." }`.
+
+---
+
+## Testing with Swagger UI
+
+After the server is running (Docker or local):
+
+1. Open in a browser: **http://localhost:8080/docs/index.html**
+2. Use **Try it out** on any endpoint, fill parameters, then **Execute**.
+3. The response (including status and body) is shown on the same page; if the API returns an error, the `error` field and status code are visible there.
+
+---
+
+## Regenerating Swagger docs
+
+If you change Swagger comments in `cmd/api/main.go` or `internal/handler/post_handler.go`, regenerate the docs:
 
 ```bash
 go run github.com/swaggo/swag/cmd/swag@latest init -g cmd/api/main.go -d . -o docs
 ```
 
-## اجرای محلی
+Then rebuild or restart the app so the new docs are served.
 
-1. PostgreSQL را اجرا کنید.
-2. کپی فایل env:
-   ```bash
-   cp .env.example .env
-   ```
-3. وابستگی و اجرا:
-   ```bash
-   go mod tidy
-   go run ./cmd/api
-   ```
+---
 
-## endpoints
+## Building and running the binary
 
-| متد   | مسیر           | توضیح                    |
-|-------|----------------|---------------------------|
-| GET   | /api/posts     | لیست پست‌ها (limit, offset) |
-| POST  | /api/posts     | ساخت پست (form: title, body, files[]) |
-| GET   | /api/posts/:id | دریافت یک پست            |
-| PUT   | /api/posts/:id | ویرایش پست (form: title, body, files[]) |
-| DELETE| /api/posts/:id | حذف پست                  |
+Build:
 
-فایل‌های آپلودشده از طریق `/uploads/<path>` سرو می‌شوند.  
-فرمت‌های مجاز تصویر: jpg, jpeg, png, gif, webp. ویدئو: mp4, webm, mov.
+```bash
+go build -o api ./cmd/api
+```
 
-## لایسنس
+Run (set env vars or use `.env`):
+
+```bash
+./api
+```
+
+On Windows:
+
+```bash
+go build -o api.exe ./cmd/api
+api.exe
+```
+
+---
+
+## License
 
 MIT
