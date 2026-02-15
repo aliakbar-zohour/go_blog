@@ -236,10 +236,10 @@ func (h *PostHandler) Delete(w http.ResponseWriter, r *http.Request) {
 }
 
 func canEditPost(post *model.Post, authorID uint) bool {
-	if post.AuthorID == nil {
+	if post.AuthorID == 0 {
 		return true
 	}
-	return *post.AuthorID == authorID
+	return post.AuthorID == authorID
 }
 
 func parseOptionalUint(s string) *uint {

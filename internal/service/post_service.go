@@ -34,7 +34,10 @@ func (s *PostService) Create(ctx context.Context, title, body string, authorID, 
 	if len(title) > maxTitleLen {
 		return nil, errors.New("title too long")
 	}
-	post := &model.Post{Title: title, Body: trim(body), AuthorID: authorID, CategoryID: categoryID}
+	if authorID == nil || categoryID == nil {
+		return nil, errors.New("author_id and category_id are required")
+	}
+	post := &model.Post{Title: title, Body: trim(body), AuthorID: *authorID, CategoryID: *categoryID}
 	if err := s.postRepo.Create(ctx, post); err != nil {
 		return nil, err
 	}
@@ -88,10 +91,10 @@ func (s *PostService) Update(ctx context.Context, id uint, title, body string, a
 		post.Body = strings.TrimSpace(body)
 	}
 	if authorID != nil {
-		post.AuthorID = authorID
+		post.AuthorID = *authorID
 	}
 	if categoryID != nil {
-		post.CategoryID = categoryID
+		post.CategoryID = *categoryID
 	}
 	if banner != nil {
 		maxBytes := int64(s.cfg.MaxFileMB * 1024 * 1024)
