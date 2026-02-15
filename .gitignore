@@ -1,6 +1,5 @@
 .env
 uploads/
-api
 *.exe
 *.test
 vendor/

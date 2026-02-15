@@ -1,16 +1,11 @@
-// model/category: Category for grouping posts.
+// model/category: Category model for grouping posts.
 package model
 
-import (
-	"time"
-
-	"gorm.io/gorm"
-)
+import "time"
 
 type Category struct {
-	ID        uint           `gorm:"primaryKey" json:"id"`
-	Name      string         `gorm:"size:255;not null" json:"name"`
-	CreatedAt time.Time      `json:"created_at"`
-	UpdatedAt time.Time      `json:"updated_at"`
-	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
+	ID        uint      `gorm:"primaryKey" json:"id"`
+	Name      string    `gorm:"size:255;not null;uniqueIndex" json:"name"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
