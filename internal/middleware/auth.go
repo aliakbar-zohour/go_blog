@@ -20,17 +20,17 @@ func RequireAuth(secret string) func(http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			header := r.Header.Get("Authorization")
 			if header == "" {
-				response.Unauthorized(w, "authorization required")
+				response.UnauthorizedWithCode(w, "auth_required", "authorization required")
 				return
 			}
 			parts := strings.SplitN(header, " ", 2)
 			if len(parts) != 2 || parts[0] != "Bearer" {
-				response.Unauthorized(w, "invalid authorization header")
+				response.UnauthorizedWithCode(w, "invalid_header", "invalid authorization header")
 				return
 			}
 			claims, err := auth.ParseToken(parts[1], secret)
 			if err != nil {
-				response.Unauthorized(w, "invalid or expired token")
+				response.UnauthorizedWithCode(w, "invalid_token", "invalid or expired token")
 				return
 			}
 			ctx := context.WithValue(r.Context(), AuthorIDKey, claims.AuthorID)

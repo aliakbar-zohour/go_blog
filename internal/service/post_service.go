@@ -62,14 +62,28 @@ func (s *PostService) GetByID(ctx context.Context, id uint) (*model.Post, error)
 	return s.postRepo.GetByID(ctx, id)
 }
 
-func (s *PostService) List(ctx context.Context, limit, offset int, categoryID *uint) ([]model.Post, error) {
+// ListResult holds paginated posts and total count.
+type ListResult struct {
+	Items []model.Post `json:"items"`
+	Total int64        `json:"total"`
+}
+
+func (s *PostService) List(ctx context.Context, limit, offset int, categoryID *uint) (*ListResult, error) {
 	if limit <= 0 || limit > 100 {
 		limit = 20
 	}
 	if offset < 0 {
 		offset = 0
 	}
-	return s.postRepo.List(ctx, limit, offset, categoryID)
+	total, err := s.postRepo.Count(ctx, categoryID)
+	if err != nil {
+		return nil, err
+	}
+	posts, err := s.postRepo.List(ctx, limit, offset, categoryID)
+	if err != nil {
+		return nil, err
+	}
+	return &ListResult{Items: posts, Total: total}, nil
 }
 
 func (s *PostService) Update(ctx context.Context, id uint, title, body string, authorID, categoryID *uint, banner *multipart.FileHeader, files []*multipart.FileHeader) (*model.Post, error) {

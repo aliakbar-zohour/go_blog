@@ -3,7 +3,9 @@ package middleware
 
 import (
 	"log"
+	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/aliakbar-zohour/go_blog/pkg/response"
 )
@@ -32,7 +34,17 @@ func SecureHeaders(next http.Handler) http.Handler {
 
 func Log(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Printf("%s %s", r.Method, r.URL.Path)
-		next.ServeHTTP(w, r)
+		start := time.Now()
+		rid := GetRequestID(r.Context())
+		wrap := &responseWriter{ResponseWriter: w, status: http.StatusOK}
+		next.ServeHTTP(wrap, r)
+		dur := time.Since(start)
+		slog.Info("request",
+			slog.String("request_id", rid),
+			slog.String("method", r.Method),
+			slog.String("path", r.URL.Path),
+			slog.Int("status", wrap.status),
+			slog.Duration("duration_ms", dur),
+		)
 	})
 }

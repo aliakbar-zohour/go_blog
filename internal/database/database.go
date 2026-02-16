@@ -20,7 +20,7 @@ func New(cfg *config.Config) (*gorm.DB, error) {
 	if err != nil {
 		return nil, fmt.Errorf("db open: %w", err)
 	}
-	if err := db.AutoMigrate(&model.Author{}, &model.Category{}, &model.Post{}, &model.Media{}, &model.Comment{}); err != nil {
+	if err := db.AutoMigrate(&model.Author{}, &model.Category{}, &model.Post{}, &model.Media{}, &model.Comment{}, &model.EmailVerification{}); err != nil {
 		log.Printf("warning: automigrate: %v", err)
 	}
 	return db, nil

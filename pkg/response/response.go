@@ -10,6 +10,7 @@ type Body struct {
 	Success bool        `json:"success"`
 	Data    interface{} `json:"data,omitempty"`
 	Error   string      `json:"error,omitempty"`
+	Code    string      `json:"code,omitempty"` // Machine-readable error code for clients
 }
 
 func JSON(w http.ResponseWriter, status int, data interface{}) {
@@ -34,6 +35,11 @@ func Err(w http.ResponseWriter, status int, errMsg string) {
 	JSON(w, status, Body{Success: false, Error: errMsg})
 }
 
+// ErrWithCode sends an error response with a machine-readable code (e.g. invalid_email, not_found).
+func ErrWithCode(w http.ResponseWriter, status int, code, errMsg string) {
+	JSON(w, status, Body{Success: false, Error: errMsg, Code: code})
+}
+
 func BadRequest(w http.ResponseWriter, errMsg string) {
 	Err(w, http.StatusBadRequest, errMsg)
 }
@@ -52,4 +58,19 @@ func Unauthorized(w http.ResponseWriter, errMsg string) {
 
 func Forbidden(w http.ResponseWriter, errMsg string) {
 	Err(w, http.StatusForbidden, errMsg)
+}
+
+// BadRequestWithCode sends 400 with an error code.
+func BadRequestWithCode(w http.ResponseWriter, code, errMsg string) {
+	ErrWithCode(w, http.StatusBadRequest, code, errMsg)
+}
+
+// UnauthorizedWithCode sends 401 with an error code.
+func UnauthorizedWithCode(w http.ResponseWriter, code, errMsg string) {
+	ErrWithCode(w, http.StatusUnauthorized, code, errMsg)
+}
+
+// NotFoundWithCode sends 404 with an error code.
+func NotFoundWithCode(w http.ResponseWriter, code, errMsg string) {
+	ErrWithCode(w, http.StatusNotFound, code, errMsg)
 }

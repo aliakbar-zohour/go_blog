@@ -16,6 +16,7 @@ REST API for a blog built with **Go**, **PostgreSQL**, and **Swagger UI**. Suppo
 - [Swagger UI](#swagger-ui)
 - [Regenerating Swagger docs (local)](#regenerating-swagger-docs-local)
 - [Building and running the binary](#building-and-running-the-binary)
+- [Testing](#testing)
 - [License](#license)
 
 ---
@@ -29,6 +30,10 @@ REST API for a blog built with **Go**, **PostgreSQL**, and **Swagger UI**. Suppo
 - **Comments** – List/create per post; update/delete by comment ID
 - **Swagger UI** – Interactive API docs at `/docs/` (generated from code in Docker)
 - **File uploads** – Banners, avatars, post media; served under `/uploads/`
+- **Health check** – `GET /health` for load balancers and orchestration (checks DB when configured)
+- **Pagination** – List posts returns `{ "items": [...], "total": N }` for proper paging
+- **Request ID** – Every response includes `X-Request-ID`; structured logging uses it
+- **Error codes** – Auth and protected routes return a `code` field (e.g. `invalid_token`, `auth_required`) for clients
 
 ---
 
@@ -168,10 +173,19 @@ Server: **http://localhost:8080**. Create an `uploads` directory if you use file
 - **DB pool** – Connection pool (max open 25, idle 5) and prepared statements for faster queries.
 - **Gzip** – JSON responses are compressed when the client sends `Accept-Encoding: gzip`.
 - **Input validation** – Email format, field lengths (title, category name, comment body), and file type/size are validated.
+- **Request ID** – Each request gets a unique `X-Request-ID` header in the response; logs are structured (slog) with `request_id`, `method`, `path`, `status`, `duration_ms`.
 
 ---
 
 ## API endpoints
+
+### Health
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/health` | Health check; returns `{ "status": "ok" }` and 503 if DB is unavailable |
+
+---
 
 ### Auth (no JWT required)
 
@@ -194,7 +208,7 @@ Use the `token` in the **Authorization** header: `Authorization: Bearer <token>`
 
 | Method | Path | Description |
 |--------|------|-------------|
-| `GET` | `/api/posts` | List posts (`limit`, `offset`, `category_id` to filter) |
+| `GET` | `/api/posts` | List posts; returns `{ "items": [...], "total": N }`. Query: `limit`, `offset`, `category_id` |
 | `POST` | `/api/posts` | **Auth.** Create (form: `title`, `body`, `category_id`, `banner`, `files[]`); author set from JWT |
 | `GET` | `/api/posts/:id` | Get one (includes author and category) |
 | `PUT` | `/api/posts/:id` | **Auth.** Update own post (form: `title`, `body`, `category_id`, `banner`, `files[]`) |
@@ -231,7 +245,27 @@ Use the `token` in the **Authorization** header: `Authorization: Bearer <token>`
 
 - **Static files:** `/uploads/<path>` (e.g. `/uploads/posts/1/xyz.jpg`, `/uploads/banners/...`, `/uploads/avatars/...`).
 - **Images:** jpg, jpeg, png, gif, webp. **Videos:** mp4, webm, mov.
-- **Response shape:** `{ "success": true|false, "data": ..., "error": "..." }`.
+- **Response shape:** `{ "success": true|false, "data": ..., "error": "...", "code": "..." }`. The `code` field is set on errors (e.g. `invalid_credentials`, `auth_required`) for machine-readable handling.
+
+---
+
+## Testing
+
+Run unit tests:
+
+```bash
+go test ./pkg/... ./internal/... -v
+```
+
+- **pkg/auth** – Password hashing and JWT (no DB).
+- **internal/handler** – Health handler (no DB).
+- **internal/service** – Post list/count tests use SQLite in-memory and **skip when CGO is disabled** (e.g. default Windows build).
+
+Integration test (requires PostgreSQL; skips if DB is not available):
+
+```bash
+go test -v -run TestIntegration .
+```
 
 ---
 

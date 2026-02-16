@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/aliakbar-zohour/go_blog/internal/config"
 	"github.com/aliakbar-zohour/go_blog/internal/middleware"
 	"github.com/aliakbar-zohour/go_blog/internal/model"
 	"github.com/aliakbar-zohour/go_blog/internal/service"
@@ -14,12 +15,22 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
+const defaultMultipartMax = 32 << 20 // 32MB
+
 type PostHandler struct {
 	svc *service.PostService
+	cfg *config.Config
 }
 
-func NewPostHandler(svc *service.PostService) *PostHandler {
-	return &PostHandler{svc: svc}
+func NewPostHandler(svc *service.PostService, cfg *config.Config) *PostHandler {
+	return &PostHandler{svc: svc, cfg: cfg}
+}
+
+func (h *PostHandler) multipartMax() int64 {
+	if h.cfg != nil && h.cfg.BodyLimitBytes > 0 {
+		return h.cfg.BodyLimitBytes
+	}
+	return defaultMultipartMax
 }
 
 // Create godoc
@@ -40,7 +51,11 @@ func NewPostHandler(svc *service.PostService) *PostHandler {
 //	@Failure		401			{object}	response.Body
 //	@Router			/posts [post]
 func (h *PostHandler) Create(w http.ResponseWriter, r *http.Request) {
-	if err := r.ParseMultipartForm(32 << 20); err != nil {
+	maxMem := h.multipartMax()
+	if maxMem > defaultMultipartMax {
+		maxMem = defaultMultipartMax
+	}
+	if err := r.ParseMultipartForm(maxMem); err != nil {
 		response.BadRequest(w, "invalid request format")
 		return
 	}
@@ -103,19 +118,19 @@ func (h *PostHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 //	@Param			limit		query		int	false	"Items per page (default 20)"
 //	@Param			offset		query		int	false	"Number of items to skip"
 //	@Param			category_id	query		int	false	"Filter by category ID"
-//	@Success		200			{object}	response.Body{data=[]model.Post}
+//	@Success		200			{object}	response.Body{data=service.ListResult}
 //	@Failure		500			{object}	response.Body
 //	@Router			/posts [get]
 func (h *PostHandler) List(w http.ResponseWriter, r *http.Request) {
 	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
 	offset, _ := strconv.Atoi(r.URL.Query().Get("offset"))
 	categoryID := parseOptionalUint(r.URL.Query().Get("category_id"))
-	posts, err := h.svc.List(r.Context(), limit, offset, categoryID)
+	result, err := h.svc.List(r.Context(), limit, offset, categoryID)
 	if err != nil {
 		response.Internal(w, "failed to list posts")
 		return
 	}
-	response.OK(w, posts)
+	response.OK(w, result)
 }
 
 // Update godoc
@@ -155,7 +170,11 @@ func (h *PostHandler) Update(w http.ResponseWriter, r *http.Request) {
 	var banner *multipart.FileHeader
 	var files []*multipart.FileHeader
 	if strings.Contains(r.Header.Get("Content-Type"), "multipart/form-data") {
-		if err := r.ParseMultipartForm(32 << 20); err != nil {
+		maxMem := h.multipartMax()
+		if maxMem > defaultMultipartMax {
+			maxMem = defaultMultipartMax
+		}
+		if err := r.ParseMultipartForm(maxMem); err != nil {
 			response.BadRequest(w, "invalid request format")
 			return
 		}

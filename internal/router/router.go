@@ -11,11 +11,13 @@ import (
 	"github.com/aliakbar-zohour/go_blog/internal/service"
 	"github.com/go-chi/chi/v5"
 	httpSwagger "github.com/swaggo/http-swagger"
+	"gorm.io/gorm"
 )
 
-func New(postSvc *service.PostService, authorSvc *service.AuthorService, categorySvc *service.CategoryService, commentSvc *service.CommentService, authSvc *service.AuthService, cfg *config.Config) http.Handler {
+func New(db *gorm.DB, postSvc *service.PostService, authorSvc *service.AuthorService, categorySvc *service.CategoryService, commentSvc *service.CommentService, authSvc *service.AuthService, cfg *config.Config) http.Handler {
 	r := chi.NewRouter()
-	r.Use(middleware.Recover, middleware.SecureHeaders, middleware.CORS(cfg.CORSOrigins), middleware.Gzip, middleware.Log)
+	r.Use(middleware.Recover, middleware.SecureHeaders, middleware.CORS(cfg.CORSOrigins), middleware.Gzip, middleware.RequestID, middleware.Log)
+	r.Get("/health", handler.NewHealthHandler(db).Health)
 	r.Get("/docs/*", httpSwagger.WrapHandler)
 	r.Handle("/uploads/*", http.StripPrefix("/uploads/", http.FileServer(http.Dir(cfg.UploadDir))))
 	r.Route("/api", func(r chi.Router) {
@@ -30,7 +32,7 @@ func New(postSvc *service.PostService, authorSvc *service.AuthorService, categor
 		})
 		authMW := middleware.RequireAuth(cfg.JWTSecret)
 		r.Route("/posts", func(r chi.Router) {
-			ph := handler.NewPostHandler(postSvc)
+			ph := handler.NewPostHandler(postSvc, cfg)
 			r.Get("/", ph.List)
 			r.Route("/{postId}/comments", func(r chi.Router) {
 				ch := handler.NewCommentHandler(commentSvc)
@@ -43,7 +45,7 @@ func New(postSvc *service.PostService, authorSvc *service.AuthorService, categor
 			r.With(authMW).Delete("/{id}", ph.Delete)
 		})
 		r.Route("/authors", func(r chi.Router) {
-			ah := handler.NewAuthorHandler(authorSvc)
+			ah := handler.NewAuthorHandler(authorSvc, cfg)
 			r.Get("/", ah.List)
 			r.Post("/", ah.Create)
 			r.Get("/{id}", ah.GetByID)

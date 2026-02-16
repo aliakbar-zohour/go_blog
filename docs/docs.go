@@ -849,6 +849,44 @@ const docTemplate = `{
                 }
             }
         },
+        "/health": {
+            "get": {
+                "description": "Returns 200 if the API is up. Checks DB connectivity when database is configured.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "health"
+                ],
+                "summary": "Health check",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Body"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "503": {
+                        "description": "Service Unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/response.Body"
+                        }
+                    }
+                }
+            }
+        },
         "/posts": {
             "get": {
                 "description": "Returns a paginated list of posts. Optionally filter by category_id.",
@@ -891,10 +929,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/definitions/model.Post"
-                                            }
+                                            "$ref": "#/definitions/service.ListResult"
                                         }
                                     }
                                 }
@@ -1429,11 +1464,9 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "author_id": {
-                    "description": "set when user is logged in",
                     "type": "integer"
                 },
                 "author_name": {
-                    "description": "optional display name (guest or override)",
                     "type": "string"
                 },
                 "body": {
@@ -1531,12 +1564,30 @@ const docTemplate = `{
         "response.Body": {
             "type": "object",
             "properties": {
+                "code": {
+                    "description": "Machine-readable error code for clients",
+                    "type": "string"
+                },
                 "data": {},
                 "error": {
                     "type": "string"
                 },
                 "success": {
                     "type": "boolean"
+                }
+            }
+        },
+        "service.ListResult": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.Post"
+                    }
+                },
+                "total": {
+                    "type": "integer"
                 }
             }
         }

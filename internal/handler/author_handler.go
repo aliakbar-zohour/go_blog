@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/aliakbar-zohour/go_blog/internal/config"
 	"github.com/aliakbar-zohour/go_blog/internal/middleware"
 	"github.com/aliakbar-zohour/go_blog/internal/service"
 	"github.com/aliakbar-zohour/go_blog/pkg/response"
@@ -15,10 +16,18 @@ import (
 
 type AuthorHandler struct {
 	svc *service.AuthorService
+	cfg *config.Config
 }
 
-func NewAuthorHandler(svc *service.AuthorService) *AuthorHandler {
-	return &AuthorHandler{svc: svc}
+func NewAuthorHandler(svc *service.AuthorService, cfg *config.Config) *AuthorHandler {
+	return &AuthorHandler{svc: svc, cfg: cfg}
+}
+
+func (h *AuthorHandler) multipartMax() int64 {
+	if h.cfg != nil && h.cfg.BodyLimitBytes > 0 {
+		return h.cfg.BodyLimitBytes
+	}
+	return 32 << 20 // 32MB default
 }
 
 // List godoc
@@ -52,7 +61,11 @@ func (h *AuthorHandler) List(w http.ResponseWriter, r *http.Request) {
 //	@Failure		400		{object}	response.Body
 //	@Router			/authors [post]
 func (h *AuthorHandler) Create(w http.ResponseWriter, r *http.Request) {
-	if err := r.ParseMultipartForm(32 << 20); err != nil {
+	maxMem := h.multipartMax()
+	if maxMem > 32<<20 {
+		maxMem = 32 << 20
+	}
+	if err := r.ParseMultipartForm(maxMem); err != nil {
 		response.BadRequest(w, "invalid request format")
 		return
 	}
@@ -130,7 +143,11 @@ func (h *AuthorHandler) Update(w http.ResponseWriter, r *http.Request) {
 	var name string
 	var avatar *multipart.FileHeader
 	if strings.Contains(r.Header.Get("Content-Type"), "multipart/form-data") {
-		if err := r.ParseMultipartForm(32 << 20); err != nil {
+		maxMem := h.multipartMax()
+		if maxMem > 32<<20 {
+			maxMem = 32 << 20
+		}
+		if err := r.ParseMultipartForm(maxMem); err != nil {
 			response.BadRequest(w, "invalid request format")
 			return
 		}

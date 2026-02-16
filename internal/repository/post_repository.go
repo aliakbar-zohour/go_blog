@@ -39,6 +39,17 @@ func (r *PostRepository) List(ctx context.Context, limit, offset int, categoryID
 	return posts, err
 }
 
+// Count returns total number of posts, optionally filtered by category_id.
+func (r *PostRepository) Count(ctx context.Context, categoryID *uint) (int64, error) {
+	var n int64
+	q := r.db.WithContext(ctx).Model(&model.Post{})
+	if categoryID != nil && *categoryID > 0 {
+		q = q.Where("category_id = ?", *categoryID)
+	}
+	err := q.Count(&n).Error
+	return n, err
+}
+
 func (r *PostRepository) Update(ctx context.Context, post *model.Post) error {
 	return r.db.WithContext(ctx).Save(post).Error
 }

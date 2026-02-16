@@ -61,10 +61,8 @@ definitions:
   model.Comment:
     properties:
       author_id:
-        description: set when user is logged in
         type: integer
       author_name:
-        description: optional display name (guest or override)
         type: string
       body:
         type: string
@@ -129,11 +127,23 @@ definitions:
     type: object
   response.Body:
     properties:
+      code:
+        description: Machine-readable error code for clients
+        type: string
       data: {}
       error:
         type: string
       success:
         type: boolean
+    type: object
+  service.ListResult:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/model.Post'
+        type: array
+      total:
+        type: integer
     type: object
 host: localhost:8080
 info:
@@ -664,6 +674,29 @@ paths:
       summary: Update a comment
       tags:
       - comments
+  /health:
+    get:
+      description: Returns 200 if the API is up. Checks DB connectivity when database
+        is configured.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Body'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/response.Body'
+      summary: Health check
+      tags:
+      - health
   /posts:
     get:
       description: Returns a paginated list of posts. Optionally filter by category_id.
@@ -690,9 +723,7 @@ paths:
             - $ref: '#/definitions/response.Body'
             - properties:
                 data:
-                  items:
-                    $ref: '#/definitions/model.Post'
-                  type: array
+                  $ref: '#/definitions/service.ListResult'
               type: object
         "500":
           description: Internal Server Error

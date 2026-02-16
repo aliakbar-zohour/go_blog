@@ -50,16 +50,16 @@ func NewAuthHandler(svc *service.AuthService) *AuthHandler {
 func (h *AuthHandler) RequestVerification(w http.ResponseWriter, r *http.Request) {
 	var body AuthRegisterRequest
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		response.BadRequest(w, "invalid body")
+		response.BadRequestWithCode(w, "invalid_body", "invalid body")
 		return
 	}
 	if len(body.Email) > 255 {
-		response.BadRequest(w, "email too long")
+		response.BadRequestWithCode(w, "email_too_long", "email too long")
 		return
 	}
 	devCode, err := h.svc.RequestVerification(r.Context(), body.Email)
 	if err != nil {
-		response.BadRequest(w, err.Error())
+		response.BadRequestWithCode(w, "validation_failed", err.Error())
 		return
 	}
 	res := map[string]interface{}{"sent": true}
@@ -84,16 +84,16 @@ func (h *AuthHandler) RequestVerification(w http.ResponseWriter, r *http.Request
 func (h *AuthHandler) VerifyAndRegister(w http.ResponseWriter, r *http.Request) {
 	var body AuthRegisterVerifyRequest
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		response.BadRequest(w, "invalid body")
+		response.BadRequestWithCode(w, "invalid_body", "invalid body")
 		return
 	}
 	if len(body.Email) > 255 || len(body.Name) > 255 || len(body.Code) > 10 || len(body.Password) > 128 {
-		response.BadRequest(w, "field too long")
+		response.BadRequestWithCode(w, "field_too_long", "field too long")
 		return
 	}
 	a, token, err := h.svc.VerifyAndRegister(r.Context(), body.Email, body.Code, body.Name, body.Password)
 	if err != nil {
-		response.BadRequest(w, err.Error())
+		response.BadRequestWithCode(w, "validation_failed", err.Error())
 		return
 	}
 	w.Header().Set("Authorization", "Bearer "+token)
@@ -114,16 +114,16 @@ func (h *AuthHandler) VerifyAndRegister(w http.ResponseWriter, r *http.Request) 
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	var body AuthLoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		response.BadRequest(w, "invalid body")
+		response.BadRequestWithCode(w, "invalid_body", "invalid body")
 		return
 	}
 	if len(body.Email) > 255 || len(body.Password) > 128 {
-		response.BadRequest(w, "field too long")
+		response.BadRequestWithCode(w, "field_too_long", "field too long")
 		return
 	}
 	a, token, err := h.svc.Login(r.Context(), body.Email, body.Password)
 	if err != nil {
-		response.BadRequest(w, err.Error())
+		response.UnauthorizedWithCode(w, "invalid_credentials", err.Error())
 		return
 	}
 	w.Header().Set("Authorization", "Bearer "+token)
